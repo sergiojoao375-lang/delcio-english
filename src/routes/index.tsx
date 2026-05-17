@@ -1,26 +1,484 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Delcio-English — Aprende inglês conversando" },
+      {
+        name: "description",
+        content:
+          "Pratique inglês ou português com Delcio, o professor de IA. Conversação, correções gentis, áudio e tradução instantânea.",
+      },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+type LearningLang = "en" | "pt";
+
+type Bubble =
+  | { id: string; kind: "bot"; text: string; translation?: string }
+  | { id: string; kind: "user"; text: string }
+  | { id: string; kind: "correction"; text: string };
+
+const LEVELS = ["Iniciante", "Básico", "Elementar", "Pré-intermediário", "Intermediário"];
+
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function stripScore(content: string): { clean: string; correct: boolean | null } {
+  const match = content.match(/<score>([\s\S]*?)<\/score>/i);
+  let correct: boolean | null = null;
+  if (match) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (typeof parsed.correct === "boolean") correct = parsed.correct;
+    } catch {
+      /* ignore */
+    }
+  }
+  const clean = content.replace(/<score>[\s\S]*?<\/score>/gi, "").trim();
+  return { clean, correct };
+}
+
+function splitCorrection(text: string): { correction?: string; rest: string } {
+  // Find first line starting with ✏️
+  const lines = text.split("\n");
+  const idx = lines.findIndex((l) => l.trim().startsWith("✏️"));
+  if (idx === -1) return { rest: text };
+  const correction = lines[idx].replace(/^✏️\s*/, "").trim();
+  const rest = lines.filter((_, i) => i !== idx).join("\n").trim();
+  return { correction, rest };
 }
 
 function Index() {
-  return <PlaceholderIndex />;
+  const [stage, setStage] = useState<"welcome" | "chat">("welcome");
+  const [name, setName] = useState("");
+  const [learningLang, setLearningLang] = useState<LearningLang>("en");
+
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"text" | "voice">("text");
+  const [recording, setRecording] = useState(false);
+
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [turns, setTurns] = useState(0); // for progress
+
+  const recognitionRef = useRef<any>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // History sent to API (excluding corrections/translations meta)
+  const apiHistory = useMemo(
+    () =>
+      bubbles
+        .filter((b) => b.kind === "bot" || b.kind === "user")
+        .map((b) => ({
+          role: b.kind === "bot" ? ("assistant" as const) : ("user" as const),
+          content: b.text,
+        })),
+    [bubbles]
+  );
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [bubbles, loading]);
+
+  const level = LEVELS[Math.min(Math.floor(score / 80), LEVELS.length - 1)];
+  const progress = Math.min(100, ((turns % 10) / 10) * 100);
+
+  function speak(text: string) {
+    if (mode !== "voice" || typeof window === "undefined") return;
+    try {
+      const utter = new SpeechSynthesisUtterance(text.replace(/[🇺🇸🇧🇷✏️]/g, ""));
+      utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
+      utter.rate = 0.95;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utter);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function callApi(payload: any) {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 429) throw new Error("Muitas requisições — aguarde um momento.");
+      if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos.");
+      throw new Error(data?.error || "Erro ao falar com o Delcio.");
+    }
+    return (await res.json()) as { content: string };
+  }
+
+  async function start() {
+    if (!name.trim()) return;
+    setStage("chat");
+    setLoading(true);
+    try {
+      const seedUser = {
+        role: "user" as const,
+        content:
+          learningLang === "en"
+            ? `Hi! My name is ${name}. I'm a beginner. Please greet me and ask a simple question.`
+            : `Oi! Meu nome é ${name}. Sou iniciante. Por favor me cumprimente e me faça uma pergunta simples.`,
+      };
+      const { content } = await callApi({
+        messages: [seedUser],
+        userName: name,
+        learningLang,
+      });
+      const { clean } = stripScore(content);
+      const { correction, rest } = splitCorrection(clean);
+      const newBubbles: Bubble[] = [];
+      if (correction)
+        newBubbles.push({ id: uid(), kind: "correction", text: correction });
+      newBubbles.push({ id: uid(), kind: "bot", text: rest });
+      setBubbles(newBubbles);
+      speak(rest);
+    } catch (e: any) {
+      setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function send(textArg?: string) {
+    const text = (textArg ?? input).trim();
+    if (!text || loading) return;
+    setInput("");
+    const userBubble: Bubble = { id: uid(), kind: "user", text };
+    const nextBubbles = [...bubbles, userBubble];
+    setBubbles(nextBubbles);
+    setLoading(true);
+    try {
+      const history = [
+        ...apiHistory,
+        { role: "user" as const, content: text },
+      ];
+      const { content } = await callApi({
+        messages: history,
+        userName: name,
+        learningLang,
+      });
+      const { clean, correct } = stripScore(content);
+      const { correction, rest } = splitCorrection(clean);
+
+      setBubbles((prev) => {
+        const out = [...prev];
+        if (correction) out.push({ id: uid(), kind: "correction", text: correction });
+        out.push({ id: uid(), kind: "bot", text: rest });
+        return out;
+      });
+
+      setTurns((t) => t + 1);
+      if (correct === true) {
+        setScore((s) => s + 10);
+        setStreak((s) => s + 1);
+      } else if (correct === false) {
+        setStreak(0);
+      }
+      speak(rest);
+    } catch (e: any) {
+      setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleMic() {
+    if (typeof window === "undefined") return;
+    const SR =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) {
+      alert("Seu navegador não suporta reconhecimento de voz. Use Chrome no desktop.");
+      return;
+    }
+    if (recording) {
+      recognitionRef.current?.stop();
+      setRecording(false);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = learningLang === "en" ? "en-US" : "pt-BR";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      setRecording(false);
+      send(transcript);
+    };
+    rec.onerror = () => setRecording(false);
+    rec.onend = () => setRecording(false);
+    recognitionRef.current = rec;
+    rec.start();
+    setRecording(true);
+  }
+
+  async function translateLast() {
+    const lastBot = [...bubbles].reverse().find((b) => b.kind === "bot") as
+      | Extract<Bubble, { kind: "bot" }>
+      | undefined;
+    if (!lastBot || loading) return;
+    if (lastBot.translation) return;
+    setLoading(true);
+    try {
+      const { content } = await callApi({
+        mode: "translate",
+        textToTranslate: lastBot.text,
+        learningLang,
+      });
+      setBubbles((prev) =>
+        prev.map((b) =>
+          b.id === lastBot.id && b.kind === "bot" ? { ...b, translation: content } : b
+        )
+      );
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function restart() {
+    setBubbles([]);
+    setScore(0);
+    setStreak(0);
+    setTurns(0);
+    setInput("");
+    setStage("welcome");
+  }
+
+  if (stage === "welcome") {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-background via-secondary to-accent">
+        <div className="w-full max-w-md bg-card text-card-foreground rounded-2xl shadow-xl p-8 border border-border bubble-in">
+          <div className="flex justify-center text-5xl mb-3">🇧🇷 🇺🇸</div>
+          <h1 className="text-3xl font-bold text-center text-primary-dark">
+            Delcio-English <span className="text-primary">🌍</span>
+          </h1>
+          <p className="text-center text-muted-foreground mt-2 mb-6">
+            Aprenda conversando com o seu professor virtual.
+          </p>
+
+          <label className="block text-sm font-medium mb-1">
+            Como você se chama? / What's your name?
+          </label>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex: Maria"
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 mb-5 focus:outline-none focus:ring-2 focus:ring-ring"
+            onKeyDown={(e) => e.key === "Enter" && start()}
+          />
+
+          <p className="text-sm font-medium mb-2">O que você quer aprender?</p>
+          <div className="grid grid-cols-1 gap-2 mb-6">
+            <button
+              onClick={() => setLearningLang("en")}
+              className={`text-left rounded-lg border px-4 py-3 transition ${
+                learningLang === "en"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:bg-secondary"
+              }`}
+            >
+              🇺🇸 Aprendo <b>Inglês</b> (falo português)
+            </button>
+            <button
+              onClick={() => setLearningLang("pt")}
+              className={`text-left rounded-lg border px-4 py-3 transition ${
+                learningLang === "pt"
+                  ? "border-primary bg-primary/10"
+                  : "border-border hover:bg-secondary"
+              }`}
+            >
+              🇧🇷 I'm learning <b>Portuguese</b> (I speak English)
+            </button>
+          </div>
+
+          <button
+            onClick={start}
+            disabled={!name.trim()}
+            className="w-full rounded-lg bg-primary text-primary-foreground font-semibold py-3 hover:opacity-90 disabled:opacity-50 transition"
+          >
+            Começar / Let's Go! 🚀
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen flex flex-col bg-background">
+      {/* Header */}
+      <header className="bg-primary-dark text-primary-foreground px-4 py-3 shadow-md">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold">Delcio-English</span>
+            <span className="text-xl">🌍</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="bg-white/10 rounded-full px-3 py-1">👤 {name}</span>
+            <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
+              <Trophy className="w-3.5 h-3.5" /> {score}
+            </span>
+            <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
+              <Flame className="w-3.5 h-3.5" /> {streak}
+            </span>
+          </div>
+        </div>
+        <div className="max-w-3xl mx-auto mt-2 flex items-center gap-3">
+          <span className="text-xs flex items-center gap-1">
+            <Sparkles className="w-3 h-3" /> {level}
+          </span>
+          <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-correction transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* Chat */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="max-w-3xl mx-auto flex flex-col gap-3">
+          {bubbles.map((b) => {
+            if (b.kind === "user") {
+              return (
+                <div key={b.id} className="flex justify-end bubble-in">
+                  <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-user-bubble text-user-bubble-foreground px-4 py-2.5 shadow">
+                    {b.text}
+                  </div>
+                </div>
+              );
+            }
+            if (b.kind === "correction") {
+              return (
+                <div key={b.id} className="flex justify-start bubble-in">
+                  <div className="max-w-[85%] rounded-2xl bg-correction text-correction-foreground px-4 py-2.5 shadow border border-amber-300/50">
+                    <div className="text-xs font-semibold mb-1">✏️ Correção</div>
+                    <div className="text-sm">{b.text}</div>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={b.id} className="flex justify-start bubble-in flex-col gap-1.5">
+                <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-bot-bubble text-bot-bubble-foreground px-4 py-2.5 shadow whitespace-pre-line">
+                  {b.text}
+                </div>
+                {b.translation && (
+                  <div className="max-w-[85%] rounded-2xl bg-translation text-translation-foreground px-4 py-2 italic text-sm shadow border border-blue-200/50">
+                    🌐 {b.translation}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl bg-bot-bubble/80 text-bot-bubble-foreground px-4 py-2.5 shadow">
+                <span className="inline-flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" />
+                  <span
+                    className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"
+                    style={{ animationDelay: "0.15s" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 bg-white rounded-full animate-bounce"
+                    style={{ animationDelay: "0.3s" }}
+                  />
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Composer */}
+      <div className="border-t border-border bg-card">
+        <div className="max-w-3xl mx-auto px-3 py-3">
+          <div className="flex items-center gap-2 mb-2 text-xs">
+            <button
+              onClick={() => setMode("text")}
+              className={`rounded-full px-3 py-1 border ${
+                mode === "text"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border"
+              }`}
+            >
+              Modo Texto ✍️
+            </button>
+            <button
+              onClick={() => setMode("voice")}
+              className={`rounded-full px-3 py-1 border ${
+                mode === "voice"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border"
+              }`}
+            >
+              Modo Voz 🎙️
+            </button>
+            <div className="flex-1" />
+            <button
+              onClick={translateLast}
+              disabled={loading}
+              className="rounded-full px-3 py-1 border border-border hover:bg-secondary flex items-center gap-1 disabled:opacity-50"
+              title="Traduzir última mensagem"
+            >
+              <Languages className="w-3.5 h-3.5" /> Traduzir
+            </button>
+            <button
+              onClick={restart}
+              className="rounded-full px-3 py-1 border border-border hover:bg-secondary flex items-center gap-1"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" /> Recomeçar
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleMic}
+              className={`shrink-0 rounded-full w-11 h-11 flex items-center justify-center border ${
+                recording
+                  ? "bg-destructive text-destructive-foreground border-destructive mic-recording"
+                  : "bg-secondary text-secondary-foreground border-border hover:bg-accent"
+              }`}
+              aria-label="Microfone"
+            >
+              <Mic className="w-5 h-5" />
+            </button>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && send()}
+              placeholder={
+                learningLang === "en"
+                  ? "Type in English… (ou em português)"
+                  : "Digite em português… (or in English)"
+              }
+              className="flex-1 rounded-full border border-input bg-background px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={() => send()}
+              disabled={loading || !input.trim()}
+              className="shrink-0 rounded-full w-11 h-11 flex items-center justify-center bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+              aria-label="Enviar"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
 }
