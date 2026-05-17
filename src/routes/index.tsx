@@ -88,8 +88,11 @@ function Index() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [bubbles, loading]);
 
-  const level = LEVELS[Math.min(Math.floor(score / 80), LEVELS.length - 1)];
-  const progress = Math.min(100, ((turns % 10) / 10) * 100);
+  const levelIndex = Math.min(Math.floor(score / 80), LEVELS.length - 1);
+  const level = LEVELS[levelIndex];
+  const nextLevel = levelIndex < LEVELS.length - 1 ? LEVELS[levelIndex + 1] : null;
+  const turnsInCycle = turns % 10;
+  const progress = (turnsInCycle / 10) * 100;
 
   function speak(text: string) {
     if (mode !== "voice" || typeof window === "undefined") return;
@@ -335,16 +338,50 @@ function Index() {
             </span>
           </div>
         </div>
-        <div className="max-w-3xl mx-auto mt-2 flex items-center gap-3">
-          <span className="text-xs flex items-center gap-1">
-            <Sparkles className="w-3 h-3" /> {level}
-          </span>
-          <div className="flex-1 h-1.5 bg-white/15 rounded-full overflow-hidden">
+        <div className="max-w-3xl mx-auto mt-3 bg-white/5 rounded-xl px-3 py-2.5 border border-white/10">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="w-4 h-4" />
+              <span className="opacity-80">Nível:</span>
+              <span className="font-semibold">{level}</span>
+            </div>
+            <div className="flex items-center gap-1.5" aria-label={`Nível ${levelIndex + 1} de ${LEVELS.length}`}>
+              {LEVELS.map((l, i) => (
+                <span
+                  key={l}
+                  title={l}
+                  className={`h-2 rounded-full transition-all ${
+                    i < levelIndex
+                      ? "w-4 bg-correction/70"
+                      : i === levelIndex
+                        ? "w-6 bg-correction"
+                        : "w-4 bg-white/20"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-between text-[11px] opacity-80">
+            <span>Progresso da sessão</span>
+            <span>{turnsInCycle} / 10 turnos</span>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            className="mt-1 h-2 bg-white/15 rounded-full overflow-hidden"
+          >
             <div
-              className="h-full bg-correction transition-all"
+              className="h-full bg-correction transition-all duration-500 rounded-full"
               style={{ width: `${progress}%` }}
             />
           </div>
+          {nextLevel && (
+            <div className="mt-1.5 text-[11px] opacity-70">
+              Próximo: <span className="font-medium opacity-100">{nextLevel}</span>
+            </div>
+          )}
         </div>
       </header>
 
