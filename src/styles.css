@@ -118,3 +118,29 @@
   to { opacity: 1; transform: translateY(0); }
 }
 .bubble-in { animation: bubble-in 0.25s ease-out; }
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+.confetti-fall { animation: confetti-fall 2s ease-in forwards; }
+
+@keyframes fade-in-overlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in-overlay { animation: fade-in-overlay 0.3s ease-out forwards; }
+
+@keyframes celebration-pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-celebration-pop { animation: celebration-pop 0.5s ease-out forwards; }
+
+@keyframes star-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.2); }
+}
+.animate-star-bounce { animation: star-bounce 0.6s ease-in-out infinite; }

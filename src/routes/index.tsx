@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles } from "lucide-react";
+import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -69,8 +69,16 @@ function Index() {
   const [streak, setStreak] = useState(0);
   const [turns, setTurns] = useState(0); // for progress
 
+  const [celebration, setCelebration] = useState<{
+    show: boolean;
+    message: string;
+    type: "level" | "session";
+  } | null>(null);
+
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevLevelRef = useRef(-1);
+  const prevTurnsRef = useRef(-1);
 
   // History sent to API (excluding corrections/translations meta)
   const apiHistory = useMemo(
@@ -93,6 +101,65 @@ function Index() {
   const nextLevel = levelIndex < LEVELS.length - 1 ? LEVELS[levelIndex + 1] : null;
   const turnsInCycle = turns % 10;
   const progress = (turnsInCycle / 10) * 100;
+
+  // Celebration effects
+  useEffect(() => {
+    if (stage !== "chat") {
+      prevLevelRef.current = levelIndex;
+      prevTurnsRef.current = turns;
+      return;
+    }
+
+    const prevLevel = prevLevelRef.current;
+    const prevTurnsVal = prevTurnsRef.current;
+
+    prevLevelRef.current = levelIndex;
+    prevTurnsRef.current = turns;
+
+    if (prevLevel < 0) return; // first mount
+
+    if (levelIndex > prevLevel) {
+      setCelebration({ show: true, message: `🎉 Parabéns, ${name}! Você subiu para "${level}"!`, type: "level" });
+      const t = setTimeout(() => {
+        setCelebration((prev) => (prev ? { ...prev, show: false } : null));
+      }, 4500);
+      const t2 = setTimeout(() => {
+        setCelebration(null);
+      }, 5500);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(t2);
+      };
+    }
+
+    if (turns > 0 && turns % 10 === 0 && turns !== prevTurnsVal) {
+      setCelebration({ show: true, message: `🎊 Muito bem, ${name}! Você completou 10 turnos de prática!`, type: "session" });
+      const t = setTimeout(() => {
+        setCelebration((prev) => (prev ? { ...prev, show: false } : null));
+      }, 4500);
+      const t2 = setTimeout(() => {
+        setCelebration(null);
+      }, 5500);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(t2);
+      };
+    }
+  }, [levelIndex, level, turns, name, stage]);
+
+  // Confetti config
+  const confetti = useMemo(() => {
+    const colors = ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#FF69B4"];
+    return Array.from({ length: 40 }).map((_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 1.5,
+      duration: 2 + Math.random() * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 6 + Math.random() * 8,
+      rotation: Math.random() * 360,
+    }));
+  }, [celebration?.show]);
 
   function speak(text: string) {
     if (mode !== "voice" || typeof window === "undefined") return;
@@ -257,6 +324,9 @@ function Index() {
     setStreak(0);
     setTurns(0);
     setInput("");
+    setCelebration(null);
+    prevLevelRef.current = -1;
+    prevTurnsRef.current = -1;
     setStage("welcome");
   }
 
@@ -389,6 +459,51 @@ function Index() {
           )}
         </div>
       </header>
+
+      {/* Celebration overlay */}
+      {celebration?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in-overlay" />
+          <div className="absolute inset-0 overflow-hidden">
+            {confetti.map((c) => (
+              <div
+                key={c.id}
+                className="absolute top-0 confetti-fall"
+                style={{
+                  left: `${c.left}%`,
+                  animationDelay: `${c.delay}s`,
+                  animationDuration: `${c.duration}s`,
+                }}
+              >
+                <div
+                  style={{
+                    width: c.size,
+                    height: c.size * 0.6,
+                    backgroundColor: c.color,
+                    borderRadius: 2,
+                    transform: `rotate(${c.rotation}deg)`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="relative z-10 flex flex-col items-center gap-3 animate-celebration-pop text-center px-6">
+            {celebration.type === "level" ? (
+              <Crown className="w-14 h-14 text-yellow-400 drop-shadow" />
+            ) : (
+              <PartyPopper className="w-14 h-14 text-yellow-400 drop-shadow" />
+            )}
+            <div className="bg-card/95 backdrop-blur rounded-2xl border border-border px-6 py-5 shadow-2xl max-w-sm">
+              <p className="text-lg font-bold text-primary-dark">{celebration.message}</p>
+              <div className="mt-3 flex justify-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-correction animate-star-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Chat */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4">
