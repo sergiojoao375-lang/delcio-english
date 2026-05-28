@@ -69,8 +69,16 @@ function Index() {
   const [streak, setStreak] = useState(0);
   const [turns, setTurns] = useState(0); // for progress
 
+  const [celebration, setCelebration] = useState<{
+    show: boolean;
+    message: string;
+    type: "level" | "session";
+  } | null>(null);
+
   const recognitionRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevLevelRef = useRef(-1);
+  const prevTurnsRef = useRef(-1);
 
   // History sent to API (excluding corrections/translations meta)
   const apiHistory = useMemo(
@@ -93,6 +101,56 @@ function Index() {
   const nextLevel = levelIndex < LEVELS.length - 1 ? LEVELS[levelIndex + 1] : null;
   const turnsInCycle = turns % 10;
   const progress = (turnsInCycle / 10) * 100;
+
+  // Celebration effects
+  useEffect(() => {
+    if (stage !== "chat") return;
+
+    let triggered = false;
+    let msg = "";
+    let type: "level" | "session" = "session";
+
+    if (levelIndex > prevLevelRef.current && prevLevelRef.current >= 0) {
+      msg = `🎉 Parabéns, ${name}! Você subiu para "${level}"!`;
+      type = "level";
+      triggered = true;
+    } else if (turns > 0 && turns % 10 === 0 && turns !== prevTurnsRef.current) {
+      msg = `🎊 Muito bem, ${name}! Você completou 10 turnos de prática!`;
+      type = "session";
+      triggered = true;
+    }
+
+    if (triggered) {
+      setCelebration({ show: true, message: msg, type });
+      const t = setTimeout(() => {
+        setCelebration((prev) => (prev ? { ...prev, show: false } : null));
+      }, 4500);
+      const t2 = setTimeout(() => {
+        setCelebration(null);
+      }, 5500);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(t2);
+      };
+    }
+
+    prevLevelRef.current = levelIndex;
+    prevTurnsRef.current = turns;
+  }, [levelIndex, level, turns, name, stage]);
+
+  // Confetti config
+  const confetti = useMemo(() => {
+    const colors = ["#FFD700", "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#FF69B4"];
+    return Array.from({ length: 40 }).map((_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      delay: Math.random() * 1.5,
+      duration: 2 + Math.random() * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 6 + Math.random() * 8,
+      rotation: Math.random() * 360,
+    }));
+  }, [celebration?.show]);
 
   function speak(text: string) {
     if (mode !== "voice" || typeof window === "undefined") return;
