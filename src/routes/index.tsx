@@ -264,7 +264,10 @@ function Index() {
     return (
       <main className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-background via-secondary to-accent">
         <div className="w-full max-w-md bg-card text-card-foreground rounded-2xl shadow-xl p-8 border border-border bubble-in">
-          <div className="flex justify-center text-5xl mb-3">🇧🇷 🇺🇸</div>
+          <div className="flex justify-center gap-2 mb-3">
+            <span className="px-3 py-1 rounded-md bg-primary/10 text-primary-dark font-bold text-sm tracking-wide border border-primary/30">POR</span>
+            <span className="px-3 py-1 rounded-md bg-primary/10 text-primary-dark font-bold text-sm tracking-wide border border-primary/30">ENG</span>
+          </div>
           <h1 className="text-3xl font-bold text-center text-primary-dark">
             Delcio-English <span className="text-primary">🌍</span>
           </h1>
@@ -293,7 +296,8 @@ function Index() {
                   : "border-border hover:bg-secondary"
               }`}
             >
-              🇺🇸 Aprendo <b>Inglês</b> (falo português)
+              <span className="inline-block min-w-[2.5rem] text-center px-2 py-0.5 mr-2 rounded bg-primary/10 text-primary-dark font-bold text-xs">ENG</span>
+              Aprendo <b>Inglês</b> (falo português)
             </button>
             <button
               onClick={() => setLearningLang("pt")}
@@ -303,7 +307,8 @@ function Index() {
                   : "border-border hover:bg-secondary"
               }`}
             >
-              🇧🇷 I'm learning <b>Portuguese</b> (I speak English)
+              <span className="inline-block min-w-[2.5rem] text-center px-2 py-0.5 mr-2 rounded bg-primary/10 text-primary-dark font-bold text-xs">POR</span>
+              I'm learning <b>Portuguese</b> (I speak English)
             </button>
           </div>
 

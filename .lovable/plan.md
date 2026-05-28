@@ -1,37 +1,28 @@
 ## Objetivo
+1. Delcio deve responder **só no idioma que o usuário está aprendendo**. A tradução para a língua nativa aparece **apenas** quando o usuário toca em "Traduzir".
+2. Substituir o rótulo/bandeira **BR** por **POR** em toda a UI (e, por simetria, **US → ENG**).
 
-Tornar o nível atual e o progresso da sessão claramente visíveis no header durante o chat. Hoje já existe um indicador, mas é fino e discreto — vamos transformá-lo num bloco dedicado e legível.
+## Mudanças
 
-## O que muda
+### `src/routes/api/chat.ts` — system prompt do modo `chat`
+- Regra 2 reescrita: responder **somente em `${target}`**, 2–4 linhas curtas, sem repetir em `${native}`, sem prefixar com bandeiras.
+- Regra 3 reescrita: pergunta final **somente em `${target}`**.
+- Regra 1 mantida: se houver erro, linha de correção `✏️ <correção> — <explicação curta em ${native}>` (didática e condicional).
+- Regra do `<score>` mantida.
+- Modo `translate` permanece igual.
 
-No header (`src/routes/index.tsx`, estado `chat`):
+### `src/routes/index.tsx` — UI
+- Welcome screen: substituir o bloco `🇧🇷 🇺🇸` por dois chips de texto **POR** e **ENG** (mesmo tamanho/estilo do atual).
+- Botões "O que você quer aprender?":
+  - `🇺🇸 Aprendo Inglês …` → `ENG · Aprendo Inglês (falo português)`
+  - `🇧🇷 I'm learning Portuguese …` → `POR · I'm learning Portuguese (I speak English)`
+- Como a resposta do bot agora vem num único idioma, o bubble do bot renderiza normal (sem mudanças estruturais). O `splitCorrection` continua removendo a linha `✏️`.
+- Botão **Traduzir** e função `translateLast()` continuam iguais — passa a ser a única forma de ver a tradução.
+- `speak()` segue usando `learningLang` (já correto, sem repetição de idiomas).
 
-1. **Bloco "Nível"** abaixo da linha do logo:
-   - Texto: `Nível: Iniciante` (atualiza para Básico → Elementar → Pré-intermediário → Intermediário conforme a pontuação).
-   - Mini "stepper" com 5 pontos representando os 5 níveis; o ponto do nível atual fica destacado e os anteriores marcados como concluídos.
+## Fora de escopo
+- Sem alterações em pontuação, níveis, progresso da sessão, voz, header de nível, ou `src/styles.css`.
+- Sem alterações no modo `translate` da API nem no fluxo do microfone.
 
-2. **Barra de progresso da sessão**:
-   - Altura aumentada (de 1.5px para ~8px) com cantos arredondados.
-   - Label à esquerda: `Progresso da sessão` e à direita: `X / 10 turnos` (a cada 10 turnos a barra reseta — comportamento atual).
-   - Transição suave ao avançar.
-
-3. **Próximo nível**:
-   - Pequena legenda: `Próximo: Básico` (oculta quando já está no nível máximo).
-
-4. Mantém as pílulas existentes (👤 nome, 🏆 pontos, 🔥 streak) na primeira linha — sem mudanças.
-
-## Detalhes técnicos
-
-- Sem novas dependências; apenas marcação e classes Tailwind usando tokens já definidos em `src/styles.css` (`bg-correction`, `bg-white/15`, `text-primary-foreground` etc.).
-- Lógica de nível e progresso permanece a mesma:
-  - `level = LEVELS[min(floor(score / 80), 4)]`
-  - `progress = (turns % 10) / 10 * 100`
-- Adicionar derivação `nextLevel` e contador `turns % 10` para o label.
-- Acessibilidade: usar `role="progressbar"` com `aria-valuenow`, `aria-valuemin`, `aria-valuemax` na barra.
-- Responsivo: no mobile o bloco continua dentro de `max-w-3xl mx-auto` e quebra naturalmente.
-
-## Fora do escopo
-
-- Não alterar a fórmula de pontuação nem os limiares dos níveis.
-- Não persistir progresso (continua por sessão).
-- Não mexer no fluxo de welcome nem no composer.
+## Observação
+Vou usar **POR** e **ENG** como rótulos de texto (sem bandeiras). Se preferir manter 🇺🇸 e só trocar 🇧🇷, me diga antes de implementar.
