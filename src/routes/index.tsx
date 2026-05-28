@@ -104,24 +104,22 @@ function Index() {
 
   // Celebration effects
   useEffect(() => {
-    if (stage !== "chat") return;
-
-    let triggered = false;
-    let msg = "";
-    let type: "level" | "session" = "session";
-
-    if (levelIndex > prevLevelRef.current && prevLevelRef.current >= 0) {
-      msg = `🎉 Parabéns, ${name}! Você subiu para "${level}"!`;
-      type = "level";
-      triggered = true;
-    } else if (turns > 0 && turns % 10 === 0 && turns !== prevTurnsRef.current) {
-      msg = `🎊 Muito bem, ${name}! Você completou 10 turnos de prática!`;
-      type = "session";
-      triggered = true;
+    if (stage !== "chat") {
+      prevLevelRef.current = levelIndex;
+      prevTurnsRef.current = turns;
+      return;
     }
 
-    if (triggered) {
-      setCelebration({ show: true, message: msg, type });
+    const prevLevel = prevLevelRef.current;
+    const prevTurnsVal = prevTurnsRef.current;
+
+    prevLevelRef.current = levelIndex;
+    prevTurnsRef.current = turns;
+
+    if (prevLevel < 0) return; // first mount
+
+    if (levelIndex > prevLevel) {
+      setCelebration({ show: true, message: `🎉 Parabéns, ${name}! Você subiu para "${level}"!`, type: "level" });
       const t = setTimeout(() => {
         setCelebration((prev) => (prev ? { ...prev, show: false } : null));
       }, 4500);
@@ -134,8 +132,19 @@ function Index() {
       };
     }
 
-    prevLevelRef.current = levelIndex;
-    prevTurnsRef.current = turns;
+    if (turns > 0 && turns % 10 === 0 && turns !== prevTurnsVal) {
+      setCelebration({ show: true, message: `🎊 Muito bem, ${name}! Você completou 10 turnos de prática!`, type: "session" });
+      const t = setTimeout(() => {
+        setCelebration((prev) => (prev ? { ...prev, show: false } : null));
+      }, 4500);
+      const t2 = setTimeout(() => {
+        setCelebration(null);
+      }, 5500);
+      return () => {
+        clearTimeout(t);
+        clearTimeout(t2);
+      };
+    }
   }, [levelIndex, level, turns, name, stage]);
 
   // Confetti config
