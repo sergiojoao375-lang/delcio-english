@@ -296,7 +296,8 @@ function Index() {
                   : "border-border hover:bg-secondary"
               }`}
             >
-              🇺🇸 Aprendo <b>Inglês</b> (falo português)
+              <span className="inline-block min-w-[2.5rem] text-center px-2 py-0.5 mr-2 rounded bg-primary/10 text-primary-dark font-bold text-xs">ENG</span>
+              Aprendo <b>Inglês</b> (falo português)
             </button>
             <button
               onClick={() => setLearningLang("pt")}
@@ -306,7 +307,8 @@ function Index() {
                   : "border-border hover:bg-secondary"
               }`}
             >
-              🇧🇷 I'm learning <b>Portuguese</b> (I speak English)
+              <span className="inline-block min-w-[2.5rem] text-center px-2 py-0.5 mr-2 rounded bg-primary/10 text-primary-dark font-bold text-xs">POR</span>
+              I'm learning <b>Portuguese</b> (I speak English)
             </button>
           </div>
 
