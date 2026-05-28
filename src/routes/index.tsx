@@ -451,6 +451,51 @@ function Index() {
         </div>
       </header>
 
+      {/* Celebration overlay */}
+      {celebration?.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm animate-fade-in-overlay" />
+          <div className="absolute inset-0 overflow-hidden">
+            {confetti.map((c) => (
+              <div
+                key={c.id}
+                className="absolute top-0 confetti-fall"
+                style={{
+                  left: `${c.left}%`,
+                  animationDelay: `${c.delay}s`,
+                  animationDuration: `${c.duration}s`,
+                }}
+              >
+                <div
+                  style={{
+                    width: c.size,
+                    height: c.size * 0.6,
+                    backgroundColor: c.color,
+                    borderRadius: 2,
+                    transform: `rotate(${c.rotation}deg)`,
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="relative z-10 flex flex-col items-center gap-3 animate-celebration-pop text-center px-6">
+            {celebration.type === "level" ? (
+              <Crown className="w-14 h-14 text-yellow-400 drop-shadow" />
+            ) : (
+              <PartyPopper className="w-14 h-14 text-yellow-400 drop-shadow" />
+            )}
+            <div className="bg-card/95 backdrop-blur rounded-2xl border border-border px-6 py-5 shadow-2xl max-w-sm">
+              <p className="text-lg font-bold text-primary-dark">{celebration.message}</p>
+              <div className="mt-3 flex justify-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Star key={i} className="w-5 h-5 text-correction animate-star-bounce" style={{ animationDelay: `${i * 0.1}s` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4">
         <div className="max-w-3xl mx-auto flex flex-col gap-3">
