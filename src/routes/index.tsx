@@ -315,6 +315,9 @@ function Index() {
     setStreak(0);
     setTurns(0);
     setInput("");
+    setCelebration(null);
+    prevLevelRef.current = -1;
+    prevTurnsRef.current = -1;
     setStage("welcome");
   }
 
