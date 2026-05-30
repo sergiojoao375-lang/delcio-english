@@ -11,6 +11,12 @@ export const Route = createFileRoute("/")({
         content:
           "Pratique inglês ou português com Delcio, o professor de IA. Conversação, correções gentis, áudio e tradução instantânea.",
       },
+      { property: "og:title", content: "Delcio-English — Aprende inglês conversando" },
+      {
+        property: "og:description",
+        content:
+          "Pratique inglês ou português com Delcio, o professor de IA. Conversação, correções gentis, áudio e tradução instantânea.",
+      },
     ],
   }),
   component: Index,
