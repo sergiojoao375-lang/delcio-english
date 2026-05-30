@@ -359,15 +359,19 @@ function Index() {
           </div>
           <h1 className="text-3xl font-bold text-center text-primary-dark">
             Delcio-English <span className="text-primary">🌍</span>
+            <span className="block text-base font-medium text-muted-foreground mt-1">
+              Aprenda inglês conversando com IA
+            </span>
           </h1>
           <p className="text-center text-muted-foreground mt-2 mb-6">
             Aprenda conversando com o seu professor virtual.
           </p>
 
-          <label className="block text-sm font-medium mb-1">
+          <label htmlFor="learner-name" className="block text-sm font-medium mb-1">
             Como você se chama? / What's your name?
           </label>
           <input
+            id="learner-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Ex: Maria"
