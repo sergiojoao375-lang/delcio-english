@@ -79,12 +79,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Delcio" },
-      { title: "Delcio-English" },
+      { title: "Delcio-English — Aprenda inglês com IA" },
       { name: "description", content: "Delcio-English is an interactive web app for learning English or Portuguese through AI-powered conversations." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Delcio-English" },
+      { property: "og:title", content: "Delcio-English — Aprenda inglês conversando" },
       { property: "og:description", content: "Delcio-English is an interactive web app for learning English or Portuguese through AI-powered conversations." },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "/" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
       { name: "twitter:title", content: "Delcio-English" },
@@ -94,10 +95,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "canonical", href: "/" },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192x192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512x512.png" },
       { rel: "apple-touch-icon", href: "/icon-192x192.png" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              name: "Delcio-English",
+              url: "https://delcio-english.lovable.app",
+            },
+            {
+              "@type": "SoftwareApplication",
+              name: "Delcio-English",
+              applicationCategory: "EducationApplication",
+              operatingSystem: "All",
+              description: "Aprenda inglês ou português conversando com Delcio, um professor virtual com IA.",
+              url: "https://delcio-english.lovable.app",
+            },
+          ],
+        }),
+      },
     ],
   }),
 
