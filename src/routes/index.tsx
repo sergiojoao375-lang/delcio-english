@@ -68,6 +68,19 @@ function Index() {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [turns, setTurns] = useState(0); // for progress
+  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
+
 
   const [celebration, setCelebration] = useState<{
     show: boolean;
@@ -404,6 +417,16 @@ function Index() {
             <span className="text-xl">🌍</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
+            <span
+              className={`rounded-full px-2 py-1 text-[11px] font-medium border ${
+                online
+                  ? "bg-emerald-500/15 border-emerald-300/30 text-emerald-100"
+                  : "bg-amber-500/20 border-amber-300/40 text-amber-100"
+              }`}
+              title={online ? "Conectado" : "Sem internet — a IA não responde offline"}
+            >
+              {online ? "● Online" : "● Offline"}
+            </span>
             <span className="bg-white/10 rounded-full px-3 py-1">👤 {name}</span>
             <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
               <Trophy className="w-3.5 h-3.5" /> {score}
@@ -412,6 +435,7 @@ function Index() {
               <Flame className="w-3.5 h-3.5" /> {streak}
             </span>
           </div>
+
         </div>
         <div className="max-w-3xl mx-auto mt-3 bg-white/5 rounded-xl px-3 py-2.5 border border-white/10">
           <div className="flex items-center justify-between gap-3 flex-wrap">

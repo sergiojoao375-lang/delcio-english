@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -9,6 +10,8 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { registerServiceWorker } from "@/lib/register-sw";
+
 
 function NotFoundComponent() {
   return (
@@ -71,27 +74,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "theme-color", content: "#3B82F6" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Delcio" },
+      { title: "Delcio-English" },
       { name: "description", content: "Delcio-English is an interactive web app for learning English or Portuguese through AI-powered conversations." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
+      { property: "og:title", content: "Delcio-English" },
       { property: "og:description", content: "Delcio-English is an interactive web app for learning English or Portuguese through AI-powered conversations." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:title", content: "Delcio-English" },
       { name: "twitter:description", content: "Delcio-English is an interactive web app for learning English or Portuguese through AI-powered conversations." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a23810a5-3b5e-433a-b420-e97ed8a2c57a/id-preview-bafdbbc0--bd34ddd4-0dbe-4226-960d-ab54216b8567.lovable.app-1779978445641.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a23810a5-3b5e-433a-b420-e97ed8a2c57a/id-preview-bafdbbc0--bd34ddd4-0dbe-4226-960d-ab54216b8567.lovable.app-1779978445641.png" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "manifest", href: "/manifest.json" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192x192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512x512.png" },
+      { rel: "apple-touch-icon", href: "/icon-192x192.png" },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -115,9 +124,14 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
     </QueryClientProvider>
   );
 }
+
