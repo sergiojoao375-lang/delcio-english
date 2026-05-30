@@ -1,28 +1,41 @@
+# Tornar Delcio-English Offline (PWA)
+
 ## Objetivo
-1. Delcio deve responder **só no idioma que o usuário está aprendendo**. A tradução para a língua nativa aparece **apenas** quando o usuário toca em "Traduzir".
-2. Substituir o rótulo/bandeira **BR** por **POR** em toda a UI (e, por simetria, **US → ENG**).
+Tornar o app instalável no ecrã inicial de dispositivos móveis e funcionar offline com cache de assets.
 
-## Mudanças
+## Ícones já gerados
+- `public/icon-192x192.png` – ícone padrão
+- `public/icon-512x512.png` – ícone grande para splash screens
 
-### `src/routes/api/chat.ts` — system prompt do modo `chat`
-- Regra 2 reescrita: responder **somente em `${target}`**, 2–4 linhas curtas, sem repetir em `${native}`, sem prefixar com bandeiras.
-- Regra 3 reescrita: pergunta final **somente em `${target}`**.
-- Regra 1 mantida: se houver erro, linha de correção `✏️ <correção> — <explicação curta em ${native}>` (didática e condicional).
-- Regra do `<score>` mantida.
-- Modo `translate` permanece igual.
+## Passos
 
-### `src/routes/index.tsx` — UI
-- Welcome screen: substituir o bloco `🇧🇷 🇺🇸` por dois chips de texto **POR** e **ENG** (mesmo tamanho/estilo do atual).
-- Botões "O que você quer aprender?":
-  - `🇺🇸 Aprendo Inglês …` → `ENG · Aprendo Inglês (falo português)`
-  - `🇧🇷 I'm learning Portuguese …` → `POR · I'm learning Portuguese (I speak English)`
-- Como a resposta do bot agora vem num único idioma, o bubble do bot renderiza normal (sem mudanças estruturais). O `splitCorrection` continua removendo a linha `✏️`.
-- Botão **Traduzir** e função `translateLast()` continuam iguais — passa a ser a única forma de ver a tradução.
-- `speak()` segue usando `learningLang` (já correto, sem repetição de idiomas).
+### 1. Criar `public/manifest.json`
+Web App Manifest com nome, ícones, cores, `display: standalone` e `start_url: "/"`.
 
-## Fora de escopo
-- Sem alterações em pontuação, níveis, progresso da sessão, voz, header de nível, ou `src/styles.css`.
-- Sem alterações no modo `translate` da API nem no fluxo do microfone.
+### 2. Criar `public/sw.js`
+Service Worker simples que:
+- Instala e cacheia o shell básico (`/`, `/index.html`, manifest, ícones, assets estáticos)
+- Responde com cache-first para assets estáticos
+- Responde com network-first para rotas de navegação
+- Ignora chamadas à API (`/api/*`) para evitar cache de dados dinâmicos
+- Limpa caches antigos no `activate`
 
-## Observação
-Vou usar **POR** e **ENG** como rótulos de texto (sem bandeiras). Se preferir manter 🇺🇸 e só trocar 🇧🇷, me diga antes de implementar.
+### 3. Atualizar `src/routes/__root.tsx`
+- Adicionar `<link rel="manifest" href="/manifest.json" />` no `head`
+- Adicionar `<link rel="icon" ...>` para os dois tamanhos de ícone
+- Adicionar `<meta name="theme-color" content="#3B82F6" />`
+- Adicionar registo do service worker num `useEffect` em `RootComponent` (condicional: só fora de iframe/preview)
+
+### 4. Adicionar indicador de estado offline (opcional mas recomendado)
+- Pequeno componente/badge "Offline" visível quando `navigator.onLine === false`
+- Desativar o input de chat e mostrar aviso quando offline (a IA precisa de internet)
+
+## Fora de âmbito
+- Não se pretende cache de mensagens/mensagens offline (a IA precisa de internet)
+- Não se pretende sync em background
+- Não se usa `vite-plugin-pwa` (evita problemas no preview do editor)
+
+## Riscos / Notas
+- Service workers persistem no browser; usaremos estratégia de cleanup (`skipWaiting` + `clients.claim`)
+- No preview do Lovable (iframe), o registo será ignorado via deteção de `isInIframe` / `isPreviewHost`
+- O app publicado é que verá o PWA ativo; no preview do editor o service worker não regista
