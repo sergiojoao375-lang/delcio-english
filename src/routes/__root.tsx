@@ -95,10 +95,34 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "canonical", href: "/" },
       { rel: "manifest", href: "/manifest.json" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192x192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512x512.png" },
       { rel: "apple-touch-icon", href: "/icon-192x192.png" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "WebSite",
+              name: "Delcio-English",
+              url: "https://delcio-english.lovable.app",
+            },
+            {
+              "@type": "SoftwareApplication",
+              name: "Delcio-English",
+              applicationCategory: "EducationApplication",
+              operatingSystem: "All",
+              description: "Aprenda inglês ou português conversando com Delcio, um professor virtual com IA.",
+              url: "https://delcio-english.lovable.app",
+            },
+          ],
+        }),
+      },
     ],
   }),
 
