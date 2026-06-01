@@ -417,8 +417,15 @@ function Index() {
     );
   }
 
+  const lastUser = [...bubbles].reverse().find((b) => b.kind === "user") as
+    | Extract<Bubble, { kind: "user" }>
+    | undefined;
+  const lastBot = [...bubbles].reverse().find((b) => b.kind === "bot") as
+    | Extract<Bubble, { kind: "bot" }>
+    | undefined;
+
   return (
-    <main className="min-h-screen flex flex-col bg-background">
+    <main className="h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="bg-primary-dark text-primary-foreground px-4 py-3 shadow-md">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">

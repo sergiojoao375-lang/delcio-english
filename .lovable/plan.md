@@ -1,47 +1,35 @@
-# Secção Sobre (About) — SérgioTech
+# Corrigir layout do chat + Modo Voz "Blackbox"
 
-## Objetivo
-Adicionar uma página "Sobre" credibilizando o autor (Sérgio João) dentro do app, com header e rodapé fixos.
+## 1. Cabeçalho e rodapé fixos no chat
 
-## Passos
+**Problema:** No mobile, `min-h-screen` + `flex-1 overflow-y-auto` não confina o scroll — a página inteira rola e o cabeçalho/rodapé sobem junto.
 
-### 1. Guardar a logo
-- Copiar `user-uploads://ChatGPT_Image_Jun_1_2026_07_27_20_PM.png` para `src/assets/sergiotech-logo.png` para import via ES6.
+**Fix em `src/routes/index.tsx` (rota `/`, stage chat):**
+- Substituir `min-h-screen flex flex-col` por `h-[100dvh] flex flex-col overflow-hidden` no `<main>`.
+- Manter o `<header>` e o composer como filhos diretos (não-scrolláveis); só a `<div ref={scrollRef}>` (chat) faz scroll. Já está `flex-1 overflow-y-auto`.
+- Resultado: cabeçalho "Delcio-English" e rodapé do input ficam fixos; só as bolhas rolam.
 
-### 2. Criar rota `src/routes/about.tsx`
-Layout com **header fixo** no topo e **rodapé fixo** no fundo, conteúdo central com scroll.
+## 2. Modo Voz tela cheia (estilo Blackbox)
 
-**Header fixo (`fixed top-0`)**
-- Fundo branco com leve sombra/borda inferior
-- Logo SérgioTech (pequena, ~40px) à esquerda + texto "SérgioTech" 
-- Link "Voltar" para `/`
+Quando o utilizador clicar em **"Modo Voz 🎙️"**, abrir um overlay tela cheia em vez de só mudar o estado:
 
-**Conteúdo central (com `pt-20 pb-20`)**
-- Logo SérgioTech grande, centralizada (max-w ~260px)
-- Nome em destaque: **Sérgio João** (h1, grande, bold)
-- Subtítulo: *Especialista em Electricidade e Telecomunicações* (verde, médio)
-- Card com descrição:
-  > "Aplicação desenvolvida para cálculo luminotécnico e dimensionamento de sistemas de iluminação, permitindo obter resultados rápidos, precisos e profissionais para projetos elétricos."
-- Cartões de contacto (2 colunas em desktop, empilhados em mobile):
-  - **WhatsApp** com ícone (lucide `MessageCircle` / phone) → link `https://wa.me/244931728474`
-  - **Email** com ícone (lucide `Mail`) → link `mailto:sergiojoao931@gmail.com`
-- Botão principal "Contactar" verde grande → abre WhatsApp em nova aba
+**Novo componente inline `VoiceMode`** (mesmo ficheiro):
+- Overlay `fixed inset-0 z-50` com fundo preto (`bg-black`), texto branco.
+- **Orbe central animado**: círculo grande (~220px) com gradiente verde (cor `--primary`), `blur` suave e animação contínua de pulso/respirar. Quando `recording` → pulsa mais rápido e ganha anel exterior; quando `loading` (IA a responder) → roda gradiente; idle → respira devagar.
+- **Status textual** acima do orbe: "Toque para falar" / "A ouvir…" / "A pensar…" / "A responder…".
+- **Botão grande do microfone** abaixo do orbe (~72px, redondo, verde). Toca para iniciar/parar gravação (reusa `toggleMic`).
+- **Botão X no canto superior direito** para fechar (volta a `mode = "text"`).
+- Última transcrição do utilizador e última resposta do bot em texto pequeno discreto no fundo (opcional, ajuda contexto).
 
-**Rodapé fixo (`fixed bottom-0`)**
-- Fundo branco com borda superior
-- Texto centralizado: "© 2026 SérgioTech - Todos os direitos reservados"
-- Pequeno (text-xs, muted)
+**Novas keyframes em `src/styles.css`:**
+- `voice-orb-breathe` — escala 1 → 1.06 → 1, 4s ease-in-out infinite.
+- `voice-orb-pulse` — escala + opacidade do anel exterior, 1.2s infinite (recording).
+- `voice-orb-spin` — gradiente conic a rodar 360deg, 3s linear infinite (loading).
 
-### 3. Estilo visual
-- Usar tokens existentes (`--primary` já é verde Delcio — alinha com o pedido)
-- Fundo claro `bg-background`
-- Destaques `text-primary` / `bg-primary`
-- Animações leves (`bubble-in` no card principal)
-- Responsivo (mobile-first)
-
-### 4. Link de acesso
-- Adicionar link discreto "Sobre" no header da página inicial (`src/routes/index.tsx`) → navega para `/about`.
+**Comportamento:**
+- Entrar no modo voz NÃO esconde o chat por baixo (estado preservado) — apenas sobrepõe.
+- Fechar (X) → `setMode("text")`, scroll do chat permanece onde estava.
+- `speak()` continua a funcionar (já depende de `mode === "voice"`).
 
 ## Fora de âmbito
-- Não alterar a lógica de chat / aprendizagem.
-- Não alterar tokens globais do design system.
+- Sem mudanças na API `/api/chat`, sem alteração da lógica de pontuação/níveis, sem alteração na página `/about`.
