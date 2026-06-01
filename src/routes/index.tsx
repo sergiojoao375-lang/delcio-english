@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown } from "lucide-react";
 
@@ -444,6 +444,12 @@ function Index() {
             <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
               <Flame className="w-3.5 h-3.5" /> {streak}
             </span>
+            <Link
+              to="/about"
+              className="bg-white/10 hover:bg-white/20 transition rounded-full px-3 py-1 text-[12px] font-medium"
+            >
+              Sobre
+            </Link>
           </div>
 
         </div>
