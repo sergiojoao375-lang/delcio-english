@@ -144,3 +144,22 @@
   50% { transform: translateY(-6px) scale(1.2); }
 }
 .animate-star-bounce { animation: star-bounce 0.6s ease-in-out infinite; }
+
+@keyframes voice-orb-breathe {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.06); filter: brightness(1.1); }
+}
+.voice-orb-breathe { animation: voice-orb-breathe 4s ease-in-out infinite; }
+
+@keyframes voice-orb-pulse {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+.voice-orb-pulse { animation: voice-orb-pulse 1.4s ease-out infinite; }
+
+@keyframes voice-orb-spin {
+  0% { transform: rotate(0deg) scale(1.02); }
+  50% { transform: rotate(180deg) scale(1.05); }
+  100% { transform: rotate(360deg) scale(1.02); }
+}
+.voice-orb-spin { animation: voice-orb-spin 2.5s linear infinite; }

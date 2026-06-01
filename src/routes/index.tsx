@@ -417,8 +417,15 @@ function Index() {
     );
   }
 
+  const lastUser = [...bubbles].reverse().find((b) => b.kind === "user") as
+    | Extract<Bubble, { kind: "user" }>
+    | undefined;
+  const lastBot = [...bubbles].reverse().find((b) => b.kind === "bot") as
+    | Extract<Bubble, { kind: "bot" }>
+    | undefined;
+
   return (
-    <main className="min-h-screen flex flex-col bg-background">
+    <main className="h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Header */}
       <header className="bg-primary-dark text-primary-foreground px-4 py-3 shadow-md">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
@@ -676,6 +683,93 @@ function Index() {
           </div>
         </div>
       </div>
+
+      {/* Modo Voz — overlay tela cheia estilo Blackbox */}
+      {mode === "voice" && (
+        <div className="fixed inset-0 z-50 bg-black text-white flex flex-col animate-fade-in-overlay">
+          <button
+            onClick={() => {
+              if (recording) recognitionRef.current?.stop();
+              if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+              setMode("text");
+            }}
+            aria-label="Fechar modo voz"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white/90 z-10"
+          >
+            ✕
+          </button>
+
+          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-10">
+            <div className="text-center text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
+              {loading
+                ? "A pensar…"
+                : recording
+                  ? "A ouvir…"
+                  : "Toque para falar"}
+            </div>
+
+            {/* Orbe */}
+            <div className="relative flex items-center justify-center">
+              {/* Anel externo (recording) */}
+              <div
+                className={`absolute rounded-full border-2 border-primary/50 ${
+                  recording ? "voice-orb-pulse" : "opacity-0"
+                }`}
+                style={{ width: 300, height: 300 }}
+              />
+              {/* Orbe principal */}
+              <div
+                className={`relative rounded-full ${
+                  loading ? "voice-orb-spin" : "voice-orb-breathe"
+                }`}
+                style={{
+                  width: 220,
+                  height: 220,
+                  background:
+                    "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--primary) 85%, white), var(--primary) 55%, var(--primary-dark) 100%)",
+                  boxShadow:
+                    "0 0 80px 10px color-mix(in oklab, var(--primary) 55%, transparent), inset 0 0 60px rgba(255,255,255,0.15)",
+                  filter: "blur(0.3px)",
+                }}
+              />
+            </div>
+
+            {/* Última troca */}
+            <div className="w-full max-w-md text-center space-y-2 min-h-[60px]">
+              {lastUser && (
+                <p className="text-white/70 text-sm">
+                  <span className="text-white/40">Você: </span>
+                  {lastUser.text}
+                </p>
+              )}
+              {lastBot && (
+                <p className="text-white text-base font-medium leading-snug">
+                  {lastBot.text}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Botão microfone */}
+          <div className="pb-12 pt-4 flex flex-col items-center gap-3">
+            <button
+              onClick={toggleMic}
+              disabled={loading}
+              aria-label={recording ? "Parar gravação" : "Falar"}
+              className={`w-20 h-20 rounded-full flex items-center justify-center transition shadow-2xl ${
+                recording
+                  ? "bg-destructive text-destructive-foreground mic-recording"
+                  : "bg-primary text-primary-foreground hover:brightness-110 active:scale-95 disabled:opacity-50"
+              }`}
+            >
+              <Mic className="w-9 h-9" />
+            </button>
+            <p className="text-xs text-white/40">
+              {recording ? "Toque para parar" : "Toque no microfone"}
+            </p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
