@@ -1,41 +1,47 @@
-# Tornar Delcio-English Offline (PWA)
+# Secção Sobre (About) — SérgioTech
 
 ## Objetivo
-Tornar o app instalável no ecrã inicial de dispositivos móveis e funcionar offline com cache de assets.
-
-## Ícones já gerados
-- `public/icon-192x192.png` – ícone padrão
-- `public/icon-512x512.png` – ícone grande para splash screens
+Adicionar uma página "Sobre" credibilizando o autor (Sérgio João) dentro do app, com header e rodapé fixos.
 
 ## Passos
 
-### 1. Criar `public/manifest.json`
-Web App Manifest com nome, ícones, cores, `display: standalone` e `start_url: "/"`.
+### 1. Guardar a logo
+- Copiar `user-uploads://ChatGPT_Image_Jun_1_2026_07_27_20_PM.png` para `src/assets/sergiotech-logo.png` para import via ES6.
 
-### 2. Criar `public/sw.js`
-Service Worker simples que:
-- Instala e cacheia o shell básico (`/`, `/index.html`, manifest, ícones, assets estáticos)
-- Responde com cache-first para assets estáticos
-- Responde com network-first para rotas de navegação
-- Ignora chamadas à API (`/api/*`) para evitar cache de dados dinâmicos
-- Limpa caches antigos no `activate`
+### 2. Criar rota `src/routes/about.tsx`
+Layout com **header fixo** no topo e **rodapé fixo** no fundo, conteúdo central com scroll.
 
-### 3. Atualizar `src/routes/__root.tsx`
-- Adicionar `<link rel="manifest" href="/manifest.json" />` no `head`
-- Adicionar `<link rel="icon" ...>` para os dois tamanhos de ícone
-- Adicionar `<meta name="theme-color" content="#3B82F6" />`
-- Adicionar registo do service worker num `useEffect` em `RootComponent` (condicional: só fora de iframe/preview)
+**Header fixo (`fixed top-0`)**
+- Fundo branco com leve sombra/borda inferior
+- Logo SérgioTech (pequena, ~40px) à esquerda + texto "SérgioTech" 
+- Link "Voltar" para `/`
 
-### 4. Adicionar indicador de estado offline (opcional mas recomendado)
-- Pequeno componente/badge "Offline" visível quando `navigator.onLine === false`
-- Desativar o input de chat e mostrar aviso quando offline (a IA precisa de internet)
+**Conteúdo central (com `pt-20 pb-20`)**
+- Logo SérgioTech grande, centralizada (max-w ~260px)
+- Nome em destaque: **Sérgio João** (h1, grande, bold)
+- Subtítulo: *Especialista em Electricidade e Telecomunicações* (verde, médio)
+- Card com descrição:
+  > "Aplicação desenvolvida para cálculo luminotécnico e dimensionamento de sistemas de iluminação, permitindo obter resultados rápidos, precisos e profissionais para projetos elétricos."
+- Cartões de contacto (2 colunas em desktop, empilhados em mobile):
+  - **WhatsApp** com ícone (lucide `MessageCircle` / phone) → link `https://wa.me/244931728474`
+  - **Email** com ícone (lucide `Mail`) → link `mailto:sergiojoao931@gmail.com`
+- Botão principal "Contactar" verde grande → abre WhatsApp em nova aba
+
+**Rodapé fixo (`fixed bottom-0`)**
+- Fundo branco com borda superior
+- Texto centralizado: "© 2026 SérgioTech - Todos os direitos reservados"
+- Pequeno (text-xs, muted)
+
+### 3. Estilo visual
+- Usar tokens existentes (`--primary` já é verde Delcio — alinha com o pedido)
+- Fundo claro `bg-background`
+- Destaques `text-primary` / `bg-primary`
+- Animações leves (`bubble-in` no card principal)
+- Responsivo (mobile-first)
+
+### 4. Link de acesso
+- Adicionar link discreto "Sobre" no header da página inicial (`src/routes/index.tsx`) → navega para `/about`.
 
 ## Fora de âmbito
-- Não se pretende cache de mensagens/mensagens offline (a IA precisa de internet)
-- Não se pretende sync em background
-- Não se usa `vite-plugin-pwa` (evita problemas no preview do editor)
-
-## Riscos / Notas
-- Service workers persistem no browser; usaremos estratégia de cleanup (`skipWaiting` + `clients.claim`)
-- No preview do Lovable (iframe), o registo será ignorado via deteção de `isInIframe` / `isPreviewHost`
-- O app publicado é que verá o PWA ativo; no preview do editor o service worker não regista
+- Não alterar a lógica de chat / aprendizagem.
+- Não alterar tokens globais do design system.
