@@ -189,12 +189,89 @@ function Index() {
       const utter = new SpeechSynthesisUtterance(text.replace(/[🇺🇸🇧🇷✏️]/g, ""));
       utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
       utter.rate = 0.95;
+      utter.onstart = () => setSpeaking(true);
+      utter.onend = () => setSpeaking(false);
+      utter.onerror = () => setSpeaking(false);
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
     } catch {
       /* ignore */
     }
   }
+
+  // Reactive level from microphone while recording
+  useEffect(() => {
+    if (!recording) return;
+    let cancelled = false;
+    let raf = 0;
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        const Ctx: typeof AudioContext =
+          (window as any).AudioContext || (window as any).webkitAudioContext;
+        ctx = new Ctx();
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.fftSize);
+        const tick = () => {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length);
+          setVoiceLevel(Math.min(1, rms * 3.2));
+          raf = requestAnimationFrame(tick);
+        };
+        tick();
+      } catch {
+        /* mic denied */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (raf) cancelAnimationFrame(raf);
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+      setVoiceLevel(0);
+    };
+  }, [recording]);
+
+  // Synthetic level while TTS is speaking or while loading
+  useEffect(() => {
+    if (recording) return;
+    if (!speaking && !loading) return;
+    let raf = 0;
+    const start = performance.now();
+    const amp = speaking ? 1 : 0.35;
+    const tick = () => {
+      const t = (performance.now() - start) / 1000;
+      const wave =
+        0.45 +
+        0.28 * Math.sin(t * 7.3) +
+        0.18 * Math.sin(t * 13.7 + 1.2) +
+        0.1 * Math.sin(t * 21.1 + 0.7);
+      const noise = (Math.random() - 0.5) * 0.12;
+      const v = Math.max(0.06, Math.min(1, Math.abs(wave) + noise)) * amp;
+      setVoiceLevel(v);
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      setVoiceLevel(0);
+    };
+  }, [speaking, loading, recording]);
+
 
   async function callApi(payload: any) {
     const res = await fetch("/api/chat", {
