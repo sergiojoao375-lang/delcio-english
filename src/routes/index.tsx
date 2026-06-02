@@ -70,6 +70,9 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"text" | "voice">("text");
   const [recording, setRecording] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceLevel, setVoiceLevel] = useState(0);
+
 
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -186,12 +189,89 @@ function Index() {
       const utter = new SpeechSynthesisUtterance(text.replace(/[🇺🇸🇧🇷✏️]/g, ""));
       utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
       utter.rate = 0.95;
+      utter.onstart = () => setSpeaking(true);
+      utter.onend = () => setSpeaking(false);
+      utter.onerror = () => setSpeaking(false);
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
     } catch {
       /* ignore */
     }
   }
+
+  // Reactive level from microphone while recording
+  useEffect(() => {
+    if (!recording) return;
+    let cancelled = false;
+    let raf = 0;
+    let stream: MediaStream | null = null;
+    let ctx: AudioContext | null = null;
+    (async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        const Ctx: typeof AudioContext =
+          (window as any).AudioContext || (window as any).webkitAudioContext;
+        ctx = new Ctx();
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        source.connect(analyser);
+        const data = new Uint8Array(analyser.fftSize);
+        const tick = () => {
+          analyser.getByteTimeDomainData(data);
+          let sum = 0;
+          for (let i = 0; i < data.length; i++) {
+            const v = (data[i] - 128) / 128;
+            sum += v * v;
+          }
+          const rms = Math.sqrt(sum / data.length);
+          setVoiceLevel(Math.min(1, rms * 3.2));
+          raf = requestAnimationFrame(tick);
+        };
+        tick();
+      } catch {
+        /* mic denied */
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (raf) cancelAnimationFrame(raf);
+      stream?.getTracks().forEach((t) => t.stop());
+      ctx?.close().catch(() => {});
+      setVoiceLevel(0);
+    };
+  }, [recording]);
+
+  // Synthetic level while TTS is speaking or while loading
+  useEffect(() => {
+    if (recording) return;
+    if (!speaking && !loading) return;
+    let raf = 0;
+    const start = performance.now();
+    const amp = speaking ? 1 : 0.35;
+    const tick = () => {
+      const t = (performance.now() - start) / 1000;
+      const wave =
+        0.45 +
+        0.28 * Math.sin(t * 7.3) +
+        0.18 * Math.sin(t * 13.7 + 1.2) +
+        0.1 * Math.sin(t * 21.1 + 0.7);
+      const noise = (Math.random() - 0.5) * 0.12;
+      const v = Math.max(0.06, Math.min(1, Math.abs(wave) + noise)) * amp;
+      setVoiceLevel(v);
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      setVoiceLevel(0);
+    };
+  }, [speaking, loading, recording]);
+
 
   async function callApi(payload: any) {
     const res = await fetch("/api/chat", {
@@ -699,40 +779,75 @@ function Index() {
             ✕
           </button>
 
-          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-10">
+          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
             <div className="text-center text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
               {loading
                 ? "A pensar…"
-                : recording
-                  ? "A ouvir…"
-                  : "Toque para falar"}
+                : speaking
+                  ? "A responder…"
+                  : recording
+                    ? "A ouvir…"
+                    : "Toque para falar"}
             </div>
 
             {/* Orbe */}
             <div className="relative flex items-center justify-center">
-              {/* Anel externo (recording) */}
+              {/* Anel externo reativo */}
               <div
-                className={`absolute rounded-full border-2 border-primary/50 ${
-                  recording ? "voice-orb-pulse" : "opacity-0"
-                }`}
-                style={{ width: 300, height: 300 }}
+                className="absolute rounded-full border border-primary/40"
+                style={{
+                  width: 260,
+                  height: 260,
+                  opacity: 0.25 + voiceLevel * 0.55,
+                  transform: `scale(${1 + voiceLevel * 0.35})`,
+                  transition: "opacity 80ms linear, transform 80ms linear",
+                }}
               />
-              {/* Orbe principal */}
+              <div
+                className="absolute rounded-full border border-primary/30"
+                style={{
+                  width: 320,
+                  height: 320,
+                  opacity: 0.15 + voiceLevel * 0.4,
+                  transform: `scale(${1 + voiceLevel * 0.5})`,
+                  transition: "opacity 100ms linear, transform 100ms linear",
+                }}
+              />
+              {/* Pulso quando a gravar */}
+              {recording && (
+                <div
+                  className="absolute rounded-full border-2 border-primary/50 voice-orb-pulse"
+                  style={{ width: 300, height: 300 }}
+                />
+              )}
+              {/* Orbe principal reativo */}
               <div
                 className={`relative rounded-full ${
-                  loading ? "voice-orb-spin" : "voice-orb-breathe"
+                  loading
+                    ? "voice-orb-spin"
+                    : recording || speaking
+                      ? ""
+                      : "voice-orb-breathe"
                 }`}
                 style={{
                   width: 220,
                   height: 220,
                   background:
                     "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--primary) 85%, white), var(--primary) 55%, var(--primary-dark) 100%)",
-                  boxShadow:
-                    "0 0 80px 10px color-mix(in oklab, var(--primary) 55%, transparent), inset 0 0 60px rgba(255,255,255,0.15)",
-                  filter: "blur(0.3px)",
+                  boxShadow: `0 0 ${60 + voiceLevel * 100}px ${10 + voiceLevel * 24}px color-mix(in oklab, var(--primary) ${50 + voiceLevel * 35}%, transparent), inset 0 0 60px rgba(255,255,255,0.18)`,
+                  filter: `blur(0.3px) brightness(${1 + voiceLevel * 0.55}) saturate(${1 + voiceLevel * 0.4})`,
+                  transform:
+                    recording || speaking
+                      ? `scale(${1 + voiceLevel * 0.32})`
+                      : undefined,
+                  transition:
+                    "transform 70ms linear, box-shadow 70ms linear, filter 70ms linear",
                 }}
               />
             </div>
+
+            {/* Waveform reativa */}
+            <Waveform level={voiceLevel} active={recording || speaking || loading} />
 
             {/* Última troca */}
             <div className="w-full max-w-md text-center space-y-2 min-h-[60px]">
@@ -749,6 +864,7 @@ function Index() {
               )}
             </div>
           </div>
+
 
           {/* Botão microfone */}
           <div className="pb-12 pt-4 flex flex-col items-center gap-3">
@@ -773,3 +889,31 @@ function Index() {
     </main>
   );
 }
+
+function Waveform({ level, active }: { level: number; active: boolean }) {
+  const N = 32;
+  return (
+    <div className="flex items-end justify-center gap-[3px] h-16">
+      {Array.from({ length: N }).map((_, i) => {
+        const center = (N - 1) / 2;
+        const bell = 1 - Math.abs(i - center) / center;
+        const wobble = 0.55 + 0.45 * Math.sin(i * 0.85 + level * 22 + i);
+        const h = active
+          ? Math.max(4, (6 + level * 58) * (0.35 + bell * 0.65) * wobble)
+          : 4;
+        return (
+          <div
+            key={i}
+            className="w-[3px] rounded-full bg-primary"
+            style={{
+              height: h,
+              opacity: active ? 0.6 + level * 0.4 : 0.35,
+              transition: "height 70ms linear, opacity 120ms linear",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+

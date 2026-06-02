@@ -1,35 +1,42 @@
-# Corrigir layout do chat + Modo Voz "Blackbox"
+# Orbe + waveform reativos à voz (Modo Voz)
 
-## 1. Cabeçalho e rodapé fixos no chat
+## Problema
+O orbe verde tem só animações CSS estáticas (`voice-orb-breathe`/`spin`), não reage à voz real.
 
-**Problema:** No mobile, `min-h-screen` + `flex-1 overflow-y-auto` não confina o scroll — a página inteira rola e o cabeçalho/rodapé sobem junto.
+## Solução (em `src/routes/index.tsx` + `src/styles.css`)
 
-**Fix em `src/routes/index.tsx` (rota `/`, stage chat):**
-- Substituir `min-h-screen flex flex-col` por `h-[100dvh] flex flex-col overflow-hidden` no `<main>`.
-- Manter o `<header>` e o composer como filhos diretos (não-scrolláveis); só a `<div ref={scrollRef}>` (chat) faz scroll. Já está `flex-1 overflow-y-auto`.
-- Resultado: cabeçalho "Delcio-English" e rodapé do input ficam fixos; só as bolhas rolam.
+### 1. Hook de amplitude do microfone
+Quando entra em modo gravação, criar um `AudioContext` + `AnalyserNode` ligado ao `MediaStream` do mic (reaproveitar o stream já obtido em `toggleMic`). Num `requestAnimationFrame` loop, ler `getByteTimeDomainData` → calcular RMS (0–1) → guardar em `useRef` + `useState` (throttled) chamado `level`.
 
-## 2. Modo Voz tela cheia (estilo Blackbox)
+Cleanup: parar rAF e fechar `AudioContext` quando para de gravar ou fecha o modo voz.
 
-Quando o utilizador clicar em **"Modo Voz 🎙️"**, abrir um overlay tela cheia em vez de só mudar o estado:
+### 2. Hook de amplitude da fala do bot (TTS)
+`speechSynthesis` não expõe áudio cru. Solução prática: enquanto `speaking` está `true`, gerar um `level` sintético oscilante (combinação de senos com pequeno ruído) que parece fala. Atualizado no mesmo rAF loop. Para quando `onend` dispara.
 
-**Novo componente inline `VoiceMode`** (mesmo ficheiro):
-- Overlay `fixed inset-0 z-50` com fundo preto (`bg-black`), texto branco.
-- **Orbe central animado**: círculo grande (~220px) com gradiente verde (cor `--primary`), `blur` suave e animação contínua de pulso/respirar. Quando `recording` → pulsa mais rápido e ganha anel exterior; quando `loading` (IA a responder) → roda gradiente; idle → respira devagar.
-- **Status textual** acima do orbe: "Toque para falar" / "A ouvir…" / "A pensar…" / "A responder…".
-- **Botão grande do microfone** abaixo do orbe (~72px, redondo, verde). Toca para iniciar/parar gravação (reusa `toggleMic`).
-- **Botão X no canto superior direito** para fechar (volta a `mode = "text"`).
-- Última transcrição do utilizador e última resposta do bot em texto pequeno discreto no fundo (opcional, ajuda contexto).
+Resultado: existe sempre um `level` 0–1 que alimenta o orbe e as barras, vindo do mic (recording) OU do TTS (speaking) OU 0 (idle).
 
-**Novas keyframes em `src/styles.css`:**
-- `voice-orb-breathe` — escala 1 → 1.06 → 1, 4s ease-in-out infinite.
-- `voice-orb-pulse` — escala + opacidade do anel exterior, 1.2s infinite (recording).
-- `voice-orb-spin` — gradiente conic a rodar 360deg, 3s linear infinite (loading).
+### 3. Orbe reativo
+Aplicar estilo inline ao orbe:
+- `transform: scale(${1 + level * 0.35})`
+- `filter: brightness(${1 + level * 0.6}) blur(...)`
+- Intensidade do anel exterior (`box-shadow` verde) cresce com `level`.
+- Manter `voice-orb-breathe` como base subtil quando idle (level≈0).
 
-**Comportamento:**
-- Entrar no modo voz NÃO esconde o chat por baixo (estado preservado) — apenas sobrepõe.
-- Fechar (X) → `setMode("text")`, scroll do chat permanece onde estava.
-- `speak()` continua a funcionar (já depende de `mode === "voice"`).
+### 4. Waveform por baixo do orbe
+Adicionar uma fila de ~24 barras verticais (`div` finos verdes) centradas. Cada barra tem altura derivada de `level` + um offset por índice (seno) para criar forma de onda viva. Quando idle, barras ficam pequenas e estáticas; quando recording/speaking, dançam.
+
+Pequenas barras com `rounded-full bg-primary`, gap pequeno, altura mín 4px / máx ~64px.
+
+### 5. Estados visuais
+- Idle: orbe respira devagar, barras planas.
+- Recording (mic): orbe + barras seguem amplitude real do utilizador, anel pulsante vermelho-ish (manter `voice-orb-pulse`).
+- Speaking (bot): orbe + barras seguem oscilação sintética em verde.
+- Thinking (loading): manter `voice-orb-spin`, barras com pequena onda contínua.
+
+## Ficheiros tocados
+- `src/routes/index.tsx` — novo helper `useVoiceLevel(mediaStream, speaking)`, atualizar componente `VoiceMode` para usar `level`, adicionar `<Waveform level={level} />` inline.
+- `src/styles.css` — pequenos ajustes (nenhuma nova keyframe obrigatória; talvez `waveform-idle` subtil).
 
 ## Fora de âmbito
-- Sem mudanças na API `/api/chat`, sem alteração da lógica de pontuação/níveis, sem alteração na página `/about`.
+- Sem mudanças em `/api/chat`, scoring, página `/about`, layout do chat de texto.
+- Sem trocar TTS por ElevenLabs (continua `speechSynthesis`).
