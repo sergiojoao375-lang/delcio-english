@@ -889,3 +889,31 @@ function Index() {
     </main>
   );
 }
+
+function Waveform({ level, active }: { level: number; active: boolean }) {
+  const N = 32;
+  return (
+    <div className="flex items-end justify-center gap-[3px] h-16">
+      {Array.from({ length: N }).map((_, i) => {
+        const center = (N - 1) / 2;
+        const bell = 1 - Math.abs(i - center) / center;
+        const wobble = 0.55 + 0.45 * Math.sin(i * 0.85 + level * 22 + i);
+        const h = active
+          ? Math.max(4, (6 + level * 58) * (0.35 + bell * 0.65) * wobble)
+          : 4;
+        return (
+          <div
+            key={i}
+            className="w-[3px] rounded-full bg-primary"
+            style={{
+              height: h,
+              opacity: active ? 0.6 + level * 0.4 : 0.35,
+              transition: "height 70ms linear, opacity 120ms linear",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
