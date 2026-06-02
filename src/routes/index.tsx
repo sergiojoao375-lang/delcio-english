@@ -71,7 +71,7 @@ function Index() {
   const [mode, setMode] = useState<"text" | "voice">("text");
   const [recording, setRecording] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const [level, setLevel] = useState(0);
+  const [voiceLevel, setVoiceLevel] = useState(0);
 
 
   const [score, setScore] = useState(0);
