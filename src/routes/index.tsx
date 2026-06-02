@@ -779,40 +779,75 @@ function Index() {
             ✕
           </button>
 
-          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-10">
+          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
             <div className="text-center text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
               {loading
                 ? "A pensar…"
-                : recording
-                  ? "A ouvir…"
-                  : "Toque para falar"}
+                : speaking
+                  ? "A responder…"
+                  : recording
+                    ? "A ouvir…"
+                    : "Toque para falar"}
             </div>
 
             {/* Orbe */}
             <div className="relative flex items-center justify-center">
-              {/* Anel externo (recording) */}
+              {/* Anel externo reativo */}
               <div
-                className={`absolute rounded-full border-2 border-primary/50 ${
-                  recording ? "voice-orb-pulse" : "opacity-0"
-                }`}
-                style={{ width: 300, height: 300 }}
+                className="absolute rounded-full border border-primary/40"
+                style={{
+                  width: 260,
+                  height: 260,
+                  opacity: 0.25 + voiceLevel * 0.55,
+                  transform: `scale(${1 + voiceLevel * 0.35})`,
+                  transition: "opacity 80ms linear, transform 80ms linear",
+                }}
               />
-              {/* Orbe principal */}
+              <div
+                className="absolute rounded-full border border-primary/30"
+                style={{
+                  width: 320,
+                  height: 320,
+                  opacity: 0.15 + voiceLevel * 0.4,
+                  transform: `scale(${1 + voiceLevel * 0.5})`,
+                  transition: "opacity 100ms linear, transform 100ms linear",
+                }}
+              />
+              {/* Pulso quando a gravar */}
+              {recording && (
+                <div
+                  className="absolute rounded-full border-2 border-primary/50 voice-orb-pulse"
+                  style={{ width: 300, height: 300 }}
+                />
+              )}
+              {/* Orbe principal reativo */}
               <div
                 className={`relative rounded-full ${
-                  loading ? "voice-orb-spin" : "voice-orb-breathe"
+                  loading
+                    ? "voice-orb-spin"
+                    : recording || speaking
+                      ? ""
+                      : "voice-orb-breathe"
                 }`}
                 style={{
                   width: 220,
                   height: 220,
                   background:
                     "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--primary) 85%, white), var(--primary) 55%, var(--primary-dark) 100%)",
-                  boxShadow:
-                    "0 0 80px 10px color-mix(in oklab, var(--primary) 55%, transparent), inset 0 0 60px rgba(255,255,255,0.15)",
-                  filter: "blur(0.3px)",
+                  boxShadow: `0 0 ${60 + voiceLevel * 100}px ${10 + voiceLevel * 24}px color-mix(in oklab, var(--primary) ${50 + voiceLevel * 35}%, transparent), inset 0 0 60px rgba(255,255,255,0.18)`,
+                  filter: `blur(0.3px) brightness(${1 + voiceLevel * 0.55}) saturate(${1 + voiceLevel * 0.4})`,
+                  transform:
+                    recording || speaking
+                      ? `scale(${1 + voiceLevel * 0.32})`
+                      : undefined,
+                  transition:
+                    "transform 70ms linear, box-shadow 70ms linear, filter 70ms linear",
                 }}
               />
             </div>
+
+            {/* Waveform reativa */}
+            <Waveform level={voiceLevel} active={recording || speaking || loading} />
 
             {/* Última troca */}
             <div className="w-full max-w-md text-center space-y-2 min-h-[60px]">
@@ -829,6 +864,7 @@ function Index() {
               )}
             </div>
           </div>
+
 
           {/* Botão microfone */}
           <div className="pb-12 pt-4 flex flex-col items-center gap-3">
