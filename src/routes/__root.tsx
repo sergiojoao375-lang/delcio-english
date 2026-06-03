@@ -11,6 +11,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { registerServiceWorker } from "@/lib/register-sw";
+import { OfflineIndicator } from "@/components/offline-indicator";
 
 
 function NotFoundComponent() {
@@ -155,6 +156,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <OfflineIndicator />
       <Outlet />
     </QueryClientProvider>
   );
