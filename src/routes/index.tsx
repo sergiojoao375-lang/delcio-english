@@ -190,12 +190,63 @@ function Index() {
     }));
   }, [celebration?.show]);
 
+  // Carregar vozes disponíveis no navegador
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const load = () => {
+      const all = window.speechSynthesis.getVoices();
+      setVoices(all);
+    };
+    load();
+    window.speechSynthesis.onvoiceschanged = load;
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
+
+  // Vozes filtradas para o idioma atual, ordenadas por "simpatia"
+  const langVoices = useMemo(() => {
+    const langPrefix = learningLang === "en" ? "en" : "pt";
+    const score = (v: SpeechSynthesisVoice) => {
+      const n = v.name.toLowerCase();
+      let s = 0;
+      if (n.includes("natural") || n.includes("neural")) s += 100;
+      if (n.includes("premium") || n.includes("enhanced")) s += 60;
+      if (n.includes("google")) s += 40;
+      if (n.includes("microsoft")) s += 30;
+      // Vozes femininas tendem a soar mais "amigáveis" — preferir nomes comuns
+      const friendly = ["ava", "jenny", "aria", "sonia", "emma", "samantha", "joanna", "luciana", "francisca", "maria", "fernanda", "camila", "ines", "amalia", "raquel"];
+      if (friendly.some((f) => n.includes(f))) s += 25;
+      if (v.lang.toLowerCase().startsWith(langPrefix)) s += 10;
+      return s;
+    };
+    return voices
+      .filter((v) => v.lang.toLowerCase().startsWith(langPrefix))
+      .sort((a, b) => score(b) - score(a));
+  }, [voices, learningLang]);
+
+  // Escolher voz por defeito se nenhuma estiver guardada
+  useEffect(() => {
+    if (selectedVoiceURI) return;
+    if (langVoices.length === 0) return;
+    setSelectedVoiceURI(langVoices[0].voiceURI);
+  }, [langVoices, selectedVoiceURI]);
+
   function speak(text: string) {
     if (mode !== "voice" || typeof window === "undefined") return;
     try {
       const utter = new SpeechSynthesisUtterance(text.replace(/[🇺🇸🇧🇷✏️]/g, ""));
       utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
+      const chosen =
+        voices.find((v) => v.voiceURI === selectedVoiceURI) || langVoices[0];
+      if (chosen) {
+        utter.voice = chosen;
+        utter.lang = chosen.lang;
+      }
+      // Tom mais quente e amigável
       utter.rate = 0.95;
+      utter.pitch = 1.15;
+      utter.volume = 1;
       utter.onstart = () => setSpeaking(true);
       utter.onend = () => setSpeaking(false);
       utter.onerror = () => setSpeaking(false);
@@ -205,6 +256,7 @@ function Index() {
       /* ignore */
     }
   }
+
 
   // Reactive level from microphone while recording
   useEffect(() => {
