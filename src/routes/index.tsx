@@ -841,6 +841,31 @@ function Index() {
             ✕
           </button>
 
+          {/* Seletor de voz */}
+          {langVoices.length > 0 && (
+            <div className="absolute top-4 left-4 z-10">
+              <select
+                value={selectedVoiceURI}
+                onChange={(e) => {
+                  setSelectedVoiceURI(e.target.value);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("delcio.voiceURI", e.target.value);
+                  }
+                }}
+                className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40 max-w-[220px] cursor-pointer"
+                aria-label="Escolher voz"
+              >
+                {langVoices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI} className="bg-black text-white">
+                    {v.name.replace(/Microsoft |Google /, "")} · {v.lang}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+
+
           <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
             <div className="text-center text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
               {loading
