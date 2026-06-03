@@ -1,28 +1,50 @@
-## Indicador visual de "Offline"
+## Vozes mais naturais com ElevenLabs (escolha do utilizador)
 
-Adicionar um indicador visual quando `navigator.onLine === false`, para o utilizador perceber claramente quando está sem internet (especialmente útil quando o `/api/chat` falha por falta de rede).
+Substituir o `speechSynthesis` do navegador (robotizado) por **ElevenLabs TTS** — vozes humanas de alta qualidade, consistentes em qualquer dispositivo. O utilizador escolhe a voz numa lista curada de vozes amigáveis.
+
+### Pré-requisito
+Adicionar a chave `ELEVENLABS_API_KEY` aos secrets do projeto. Vou pedi-la via `add_secret` quando começar a implementação. Indicações para o utilizador: criar conta em elevenlabs.io → Profile → API Keys → copiar a chave.
 
 ### Mudanças
 
-**1. Novo hook `src/hooks/use-online-status.ts`**
-- Retorna `boolean` com estado atual.
-- Inicializa com `navigator.onLine` (com guard para SSR → `true` por defeito).
-- Regista listeners `online` / `offline` em `window` e limpa no unmount.
+**1. Novo endpoint server `src/routes/api/tts.ts`**
+- POST `{ text, voiceId }` → devolve MP3 binário (`audio/mpeg`).
+- Usa `eleven_multilingual_v2` (suporta EN e PT-BR).
+- Lê `process.env.ELEVENLABS_API_KEY`; 500 se faltar.
+- `voice_settings`: stability 0.5, similarity_boost 0.75, style 0.4, speed 1.0 — tom conversacional e quente.
+- Valida `text` (1–2000 chars) e `voiceId` contra allowlist.
 
-**2. Novo componente `src/components/offline-indicator.tsx`**
-- Usa o hook. Quando offline, renderiza um badge fixo no topo (centrado):
-  - Pequena pill com ícone `WifiOff` (lucide-react) + texto "Sem ligação".
-  - Estilo: `bg-destructive text-destructive-foreground`, `rounded-full`, sombra suave, `fixed top-3 left-1/2 -translate-x-1/2 z-50`.
-  - Animação subtil de entrada (fade + slide down) via classes Tailwind existentes.
-- Não renderiza nada quando online.
+**2. Catálogo de vozes amigáveis `src/lib/voices.ts`**
+Lista curada (todas multilingues, soam naturais em EN e PT):
+- **Sarah** — feminina, calma, amigável (`EXAVITQu4vr4xnSDxMaL`)
+- **Laura** — feminina, animada (`FGY2WhTYpPnrIDTdsKH5`)
+- **Lily** — feminina, doce e jovem (`pFZP5JQG7iQjIQuC4Bku`)
+- **Matilda** — feminina, calorosa (`XrExE9yKIg1WjnnlVkGX`)
+- **Charlie** — masculina, natural (`IKne3meq5aSn9XLyUdCD`)
+- **George** — masculina, calma (`JBFqnCBsd6RMkjVDRZzb`)
+- **Liam** — masculina, jovem e simpática (`TX3LPaxmHKxFdv7VOQHJ`)
+- **Brian** — masculina, descontraída (`nPczCjzI2devNBz1zQrb`)
 
-**3. `src/routes/__root.tsx`**
-- Importar e montar `<OfflineIndicator />` dentro de `RootComponent`, ao lado do `<Outlet />`, para ficar visível em todas as rotas.
+Cada entrada: `{ id, name, gender, description }`.
 
-**4. `src/routes/index.tsx` (modo voz)**
-- Quando o utilizador tenta enviar/gravar enquanto offline, mostrar um `toast` curto ("Sem ligação à internet") em vez de tentar chamar `/api/chat`. Verificação simples no início de `callApi` / `sendText`.
+**3. `src/routes/index.tsx`**
+- Remover lógica de `speechSynthesis.getVoices()` e do `<select>` de vozes do SO (adicionado na iteração anterior).
+- Novo estado `voiceId` persistido em `localStorage` (default: Sarah).
+- Reescrever `speak(text)`:
+  - `fetch('/api/tts', { method: 'POST', body: { text, voiceId } })`
+  - `response.blob()` → `URL.createObjectURL` → `new Audio(url)` → `play()`
+  - Ligar `onplay`/`onended`/`onerror` a `setSpeaking`.
+  - Guardar ref do `Audio` atual para poder cancelar quando o utilizador fecha o modo voz ou começa a falar.
+  - Fallback: se o fetch falhar (offline, 429, 402), mostrar toast e cair em `speechSynthesis` como backup.
+- Substituir o `<select>` atual por um picker mais cuidado no canto superior esquerdo do modo voz:
+  - Mostra a voz atual com nome + género.
+  - Clicar abre um pequeno painel com a lista das 8 vozes, cada uma com nome, descrição e botão "▶ Ouvir" (toca uma amostra curta de ~3 s da voz).
+  - Selecionar fecha o painel e guarda em localStorage.
 
 ### Fora do âmbito
-- Não muda o comportamento do Service Worker.
-- Não altera o orbe, waveform, autenticação, ou lógica do chat.
-- Sem mudanças na base de dados.
+- Sem mudanças no chat, orbe, waveform, auth, base de dados, ou modo offline.
+- Sem streaming TTS (mantém-se simples — MP3 completo). Posso adicionar depois se for lento.
+
+### Notas técnicas
+- ElevenLabs é pago após free tier (~10k chars/mês grátis). Vou comunicar isto ao utilizador quando pedir a chave.
+- Em offline, salta o fetch e usa o `speechSynthesis` (que já funciona sem rede).
