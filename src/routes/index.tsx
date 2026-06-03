@@ -274,6 +274,9 @@ function Index() {
 
 
   async function callApi(payload: any) {
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      throw new Error("Sem ligação à internet.");
+    }
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
