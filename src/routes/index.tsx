@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown } from "lucide-react";
+import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown, Play, Volume2 } from "lucide-react";
+import { VOICES, DEFAULT_VOICE_ID } from "@/lib/voices";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -72,11 +73,13 @@ function Index() {
   const [recording, setRecording] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("delcio.voiceURI") || "";
+  const [voiceId, setVoiceId] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_VOICE_ID;
+    return localStorage.getItem("delcio.voiceId") || DEFAULT_VOICE_ID;
   });
+  const [showVoicePicker, setShowVoicePicker] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
 
 
@@ -190,72 +193,93 @@ function Index() {
     }));
   }, [celebration?.show]);
 
-  // Carregar vozes disponíveis no navegador
-  useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const load = () => {
-      const all = window.speechSynthesis.getVoices();
-      setVoices(all);
-    };
-    load();
-    window.speechSynthesis.onvoiceschanged = load;
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
-
-  // Vozes filtradas para o idioma atual, ordenadas por "simpatia"
-  const langVoices = useMemo(() => {
-    const langPrefix = learningLang === "en" ? "en" : "pt";
-    const score = (v: SpeechSynthesisVoice) => {
-      const n = v.name.toLowerCase();
-      let s = 0;
-      if (n.includes("natural") || n.includes("neural")) s += 100;
-      if (n.includes("premium") || n.includes("enhanced")) s += 60;
-      if (n.includes("google")) s += 40;
-      if (n.includes("microsoft")) s += 30;
-      // Vozes femininas tendem a soar mais "amigáveis" — preferir nomes comuns
-      const friendly = ["ava", "jenny", "aria", "sonia", "emma", "samantha", "joanna", "luciana", "francisca", "maria", "fernanda", "camila", "ines", "amalia", "raquel"];
-      if (friendly.some((f) => n.includes(f))) s += 25;
-      if (v.lang.toLowerCase().startsWith(langPrefix)) s += 10;
-      return s;
-    };
-    return voices
-      .filter((v) => v.lang.toLowerCase().startsWith(langPrefix))
-      .sort((a, b) => score(b) - score(a));
-  }, [voices, learningLang]);
-
-  // Escolher voz por defeito se nenhuma estiver guardada
-  useEffect(() => {
-    if (selectedVoiceURI) return;
-    if (langVoices.length === 0) return;
-    setSelectedVoiceURI(langVoices[0].voiceURI);
-  }, [langVoices, selectedVoiceURI]);
-
-  function speak(text: string) {
-    if (mode !== "voice" || typeof window === "undefined") return;
+  async function speak(text: string, overrideVoiceId?: string) {
+    if (typeof window === "undefined") return;
+    const cleaned = text.replace(/[🇺🇸🇧🇷✏️🌐🎉🎊⚠️]/g, "").trim();
+    if (!cleaned) return;
     try {
-      const utter = new SpeechSynthesisUtterance(text.replace(/[🇺🇸🇧🇷✏️]/g, ""));
-      utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
-      const chosen =
-        voices.find((v) => v.voiceURI === selectedVoiceURI) || langVoices[0];
-      if (chosen) {
-        utter.voice = chosen;
-        utter.lang = chosen.lang;
+      // Cancel any pending speech
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
       }
-      // Tom mais quente e amigável
-      utter.rate = 0.95;
-      utter.pitch = 1.15;
-      utter.volume = 1;
-      utter.onstart = () => setSpeaking(true);
-      utter.onend = () => setSpeaking(false);
-      utter.onerror = () => setSpeaking(false);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utter);
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onplay = () => setSpeaking(true);
+      audio.onended = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+      await audio.play();
     } catch {
-      /* ignore */
+      // Fallback to browser speech synthesis
+      try {
+        if (!("speechSynthesis" in window)) return;
+        const utter = new SpeechSynthesisUtterance(cleaned);
+        utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
+        utter.rate = 0.95;
+        utter.pitch = 1.1;
+        utter.onstart = () => setSpeaking(true);
+        utter.onend = () => setSpeaking(false);
+        utter.onerror = () => setSpeaking(false);
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      } catch {
+        /* ignore */
+      }
     }
   }
+
+  async function previewVoice(id: string) {
+    if (previewingVoice) return;
+    setPreviewingVoice(id);
+    const sample =
+      learningLang === "en"
+        ? "Hello! I'm your English teacher. Let's practice together!"
+        : "Olá! Sou seu professor. Vamos praticar juntos!";
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sample, voiceId: id }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        setPreviewingVoice(null);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setPreviewingVoice(null);
+        URL.revokeObjectURL(url);
+      };
+      await audio.play();
+    } catch {
+      setPreviewingVoice(null);
+    }
+  }
+
+  function selectVoice(id: string) {
+    setVoiceId(id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("delcio.voiceId", id);
+    }
+  }
+
 
 
   // Reactive level from microphone while recording
@@ -832,8 +856,10 @@ function Index() {
           <button
             onClick={() => {
               if (recording) recognitionRef.current?.stop();
+              if (audioRef.current) audioRef.current.pause();
               if (typeof window !== "undefined") window.speechSynthesis?.cancel();
               setMode("text");
+              setShowVoicePicker(false);
             }}
             aria-label="Fechar modo voz"
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white/90 z-10"
@@ -841,28 +867,64 @@ function Index() {
             ✕
           </button>
 
-          {/* Seletor de voz */}
-          {langVoices.length > 0 && (
-            <div className="absolute top-4 left-4 z-10">
-              <select
-                value={selectedVoiceURI}
-                onChange={(e) => {
-                  setSelectedVoiceURI(e.target.value);
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("delcio.voiceURI", e.target.value);
-                  }
-                }}
-                className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40 max-w-[220px] cursor-pointer"
-                aria-label="Escolher voz"
-              >
-                {langVoices.map((v) => (
-                  <option key={v.voiceURI} value={v.voiceURI} className="bg-black text-white">
-                    {v.name.replace(/Microsoft |Google /, "")} · {v.lang}
-                  </option>
-                ))}
-              </select>
+          {/* Botão de escolher voz */}
+          <div className="absolute top-4 left-4 z-10">
+            <button
+              onClick={() => setShowVoicePicker((v) => !v)}
+              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 flex items-center gap-1.5"
+              aria-label="Escolher voz"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+            </button>
+          </div>
+
+          {showVoicePicker && (
+            <div className="absolute top-16 left-4 z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 w-[280px] max-h-[70vh] overflow-y-auto shadow-2xl">
+              <p className="text-xs text-white/60 mb-2 px-1">Escolha a voz do seu professor</p>
+              <div className="flex flex-col gap-1">
+                {VOICES.map((v) => {
+                  const active = v.id === voiceId;
+                  return (
+                    <div
+                      key={v.id}
+                      className={`flex items-center gap-2 rounded-xl px-2.5 py-2 border transition ${
+                        active
+                          ? "bg-primary/25 border-primary/60"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      <button
+                        onClick={() => selectVoice(v.id)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="text-sm font-medium text-white flex items-center gap-1.5">
+                          {v.name}
+                          <span className="text-[10px] opacity-60">{v.gender === "f" ? "♀" : "♂"}</span>
+                        </div>
+                        <div className="text-[11px] text-white/60 leading-tight">{v.description}</div>
+                      </button>
+                      <button
+                        onClick={() => previewVoice(v.id)}
+                        disabled={previewingVoice !== null}
+                        className="shrink-0 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center disabled:opacity-40"
+                        aria-label={`Ouvir ${v.name}`}
+                        title="Ouvir amostra"
+                      >
+                        {previewingVoice === v.id ? (
+                          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5 text-white" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
+
+
 
 
 
