@@ -441,7 +441,7 @@ function Index() {
       } else if (correct === false) {
         setStreak(0);
       }
-      speak(rest);
+      speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
       setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
     } finally {
