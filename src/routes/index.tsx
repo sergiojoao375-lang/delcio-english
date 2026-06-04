@@ -193,72 +193,93 @@ function Index() {
     }));
   }, [celebration?.show]);
 
-  // Carregar vozes disponíveis no navegador
-  useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    const load = () => {
-      const all = window.speechSynthesis.getVoices();
-      setVoices(all);
-    };
-    load();
-    window.speechSynthesis.onvoiceschanged = load;
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
-
-  // Vozes filtradas para o idioma atual, ordenadas por "simpatia"
-  const langVoices = useMemo(() => {
-    const langPrefix = learningLang === "en" ? "en" : "pt";
-    const score = (v: SpeechSynthesisVoice) => {
-      const n = v.name.toLowerCase();
-      let s = 0;
-      if (n.includes("natural") || n.includes("neural")) s += 100;
-      if (n.includes("premium") || n.includes("enhanced")) s += 60;
-      if (n.includes("google")) s += 40;
-      if (n.includes("microsoft")) s += 30;
-      // Vozes femininas tendem a soar mais "amigáveis" — preferir nomes comuns
-      const friendly = ["ava", "jenny", "aria", "sonia", "emma", "samantha", "joanna", "luciana", "francisca", "maria", "fernanda", "camila", "ines", "amalia", "raquel"];
-      if (friendly.some((f) => n.includes(f))) s += 25;
-      if (v.lang.toLowerCase().startsWith(langPrefix)) s += 10;
-      return s;
-    };
-    return voices
-      .filter((v) => v.lang.toLowerCase().startsWith(langPrefix))
-      .sort((a, b) => score(b) - score(a));
-  }, [voices, learningLang]);
-
-  // Escolher voz por defeito se nenhuma estiver guardada
-  useEffect(() => {
-    if (selectedVoiceURI) return;
-    if (langVoices.length === 0) return;
-    setSelectedVoiceURI(langVoices[0].voiceURI);
-  }, [langVoices, selectedVoiceURI]);
-
-  function speak(text: string) {
-    if (mode !== "voice" || typeof window === "undefined") return;
+  async function speak(text: string, overrideVoiceId?: string) {
+    if (typeof window === "undefined") return;
+    const cleaned = text.replace(/[🇺🇸🇧🇷✏️🌐🎉🎊⚠️]/g, "").trim();
+    if (!cleaned) return;
     try {
-      const utter = new SpeechSynthesisUtterance(text.replace(/[🇺🇸🇧🇷✏️]/g, ""));
-      utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
-      const chosen =
-        voices.find((v) => v.voiceURI === selectedVoiceURI) || langVoices[0];
-      if (chosen) {
-        utter.voice = chosen;
-        utter.lang = chosen.lang;
+      // Cancel any pending speech
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
       }
-      // Tom mais quente e amigável
-      utter.rate = 0.95;
-      utter.pitch = 1.15;
-      utter.volume = 1;
-      utter.onstart = () => setSpeaking(true);
-      utter.onend = () => setSpeaking(false);
-      utter.onerror = () => setSpeaking(false);
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utter);
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onplay = () => setSpeaking(true);
+      audio.onended = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setSpeaking(false);
+        URL.revokeObjectURL(url);
+      };
+      await audio.play();
     } catch {
-      /* ignore */
+      // Fallback to browser speech synthesis
+      try {
+        if (!("speechSynthesis" in window)) return;
+        const utter = new SpeechSynthesisUtterance(cleaned);
+        utter.lang = learningLang === "en" ? "en-US" : "pt-BR";
+        utter.rate = 0.95;
+        utter.pitch = 1.1;
+        utter.onstart = () => setSpeaking(true);
+        utter.onend = () => setSpeaking(false);
+        utter.onerror = () => setSpeaking(false);
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      } catch {
+        /* ignore */
+      }
     }
   }
+
+  async function previewVoice(id: string) {
+    if (previewingVoice) return;
+    setPreviewingVoice(id);
+    const sample =
+      learningLang === "en"
+        ? "Hello! I'm your English teacher. Let's practice together!"
+        : "Olá! Sou seu professor. Vamos praticar juntos!";
+    try {
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: sample, voiceId: id }),
+      });
+      if (!res.ok) throw new Error("TTS failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        setPreviewingVoice(null);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setPreviewingVoice(null);
+        URL.revokeObjectURL(url);
+      };
+      await audio.play();
+    } catch {
+      setPreviewingVoice(null);
+    }
+  }
+
+  function selectVoice(id: string) {
+    setVoiceId(id);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("delcio.voiceId", id);
+    }
+  }
+
 
 
   // Reactive level from microphone while recording
