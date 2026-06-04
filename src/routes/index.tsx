@@ -398,7 +398,7 @@ function Index() {
         newBubbles.push({ id: uid(), kind: "correction", text: correction });
       newBubbles.push({ id: uid(), kind: "bot", text: rest });
       setBubbles(newBubbles);
-      speak(rest);
+      speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
       setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
     } finally {
@@ -441,7 +441,7 @@ function Index() {
       } else if (correct === false) {
         setStreak(0);
       }
-      speak(rest);
+      speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
       setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
     } finally {
@@ -799,6 +799,50 @@ function Index() {
               Modo Voz 🎙️
             </button>
             <div className="flex-1" />
+            <div className="relative">
+              <button
+                onClick={() => setShowVoicePicker((v) => !v)}
+                className="rounded-full px-3 py-1 border border-border hover:bg-secondary flex items-center gap-1"
+                title="Escolher voz do professor"
+              >
+                <Volume2 className="w-3.5 h-3.5" />
+                Voz: {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+              </button>
+              {showVoicePicker && mode === "text" && (
+                <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
+                  <p className="text-xs text-muted-foreground mb-2 px-1">Escolha a voz do seu professor</p>
+                  <div className="flex flex-col gap-1">
+                    {VOICES.map((v) => {
+                      const active = v.id === voiceId;
+                      return (
+                        <div
+                          key={v.id}
+                          className={`flex items-center gap-2 rounded-xl px-2.5 py-2 border transition ${
+                            active ? "bg-primary/15 border-primary/60" : "bg-secondary/40 border-border hover:bg-secondary"
+                          }`}
+                        >
+                          <button onClick={() => selectVoice(v.id)} className="flex-1 text-left">
+                            <div className="text-sm font-medium flex items-center gap-1.5">
+                              {v.name}
+                              <span className="text-[10px] opacity-60">{v.gender === "f" ? "♀" : "♂"}</span>
+                            </div>
+                            <div className="text-[11px] text-muted-foreground leading-tight">{v.description}</div>
+                          </button>
+                          <button
+                            onClick={() => previewVoice(v.id)}
+                            disabled={previewingVoice !== null}
+                            className="shrink-0 rounded-full w-8 h-8 flex items-center justify-center bg-primary/10 hover:bg-primary/20 disabled:opacity-40"
+                            title="Ouvir amostra"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             <button
               onClick={translateLast}
               disabled={loading}
@@ -814,6 +858,7 @@ function Index() {
               <RefreshCcw className="w-3.5 h-3.5" /> Recomeçar
             </button>
           </div>
+
 
           <div className="flex items-center gap-2">
             <button
