@@ -73,11 +73,13 @@ function Index() {
   const [recording, setRecording] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoiceURI, setSelectedVoiceURI] = useState<string>(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("delcio.voiceURI") || "";
+  const [voiceId, setVoiceId] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_VOICE_ID;
+    return localStorage.getItem("delcio.voiceId") || DEFAULT_VOICE_ID;
   });
+  const [showVoicePicker, setShowVoicePicker] = useState(false);
+  const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
 
 
