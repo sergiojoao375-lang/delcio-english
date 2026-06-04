@@ -856,8 +856,10 @@ function Index() {
           <button
             onClick={() => {
               if (recording) recognitionRef.current?.stop();
+              if (audioRef.current) audioRef.current.pause();
               if (typeof window !== "undefined") window.speechSynthesis?.cancel();
               setMode("text");
+              setShowVoicePicker(false);
             }}
             aria-label="Fechar modo voz"
             className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white/90 z-10"
@@ -865,28 +867,64 @@ function Index() {
             ✕
           </button>
 
-          {/* Seletor de voz */}
-          {langVoices.length > 0 && (
-            <div className="absolute top-4 left-4 z-10">
-              <select
-                value={selectedVoiceURI}
-                onChange={(e) => {
-                  setSelectedVoiceURI(e.target.value);
-                  if (typeof window !== "undefined") {
-                    localStorage.setItem("delcio.voiceURI", e.target.value);
-                  }
-                }}
-                className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40 max-w-[220px] cursor-pointer"
-                aria-label="Escolher voz"
-              >
-                {langVoices.map((v) => (
-                  <option key={v.voiceURI} value={v.voiceURI} className="bg-black text-white">
-                    {v.name.replace(/Microsoft |Google /, "")} · {v.lang}
-                  </option>
-                ))}
-              </select>
+          {/* Botão de escolher voz */}
+          <div className="absolute top-4 left-4 z-10">
+            <button
+              onClick={() => setShowVoicePicker((v) => !v)}
+              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 flex items-center gap-1.5"
+              aria-label="Escolher voz"
+            >
+              <Volume2 className="w-3.5 h-3.5" />
+              {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+            </button>
+          </div>
+
+          {showVoicePicker && (
+            <div className="absolute top-16 left-4 z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 w-[280px] max-h-[70vh] overflow-y-auto shadow-2xl">
+              <p className="text-xs text-white/60 mb-2 px-1">Escolha a voz do seu professor</p>
+              <div className="flex flex-col gap-1">
+                {VOICES.map((v) => {
+                  const active = v.id === voiceId;
+                  return (
+                    <div
+                      key={v.id}
+                      className={`flex items-center gap-2 rounded-xl px-2.5 py-2 border transition ${
+                        active
+                          ? "bg-primary/25 border-primary/60"
+                          : "bg-white/5 border-white/10 hover:bg-white/10"
+                      }`}
+                    >
+                      <button
+                        onClick={() => selectVoice(v.id)}
+                        className="flex-1 text-left"
+                      >
+                        <div className="text-sm font-medium text-white flex items-center gap-1.5">
+                          {v.name}
+                          <span className="text-[10px] opacity-60">{v.gender === "f" ? "♀" : "♂"}</span>
+                        </div>
+                        <div className="text-[11px] text-white/60 leading-tight">{v.description}</div>
+                      </button>
+                      <button
+                        onClick={() => previewVoice(v.id)}
+                        disabled={previewingVoice !== null}
+                        className="shrink-0 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center disabled:opacity-40"
+                        aria-label={`Ouvir ${v.name}`}
+                        title="Ouvir amostra"
+                      >
+                        {previewingVoice === v.id ? (
+                          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                        ) : (
+                          <Play className="w-3.5 h-3.5 text-white" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
+
+
 
 
 
