@@ -398,7 +398,7 @@ function Index() {
         newBubbles.push({ id: uid(), kind: "correction", text: correction });
       newBubbles.push({ id: uid(), kind: "bot", text: rest });
       setBubbles(newBubbles);
-      speak(rest);
+      speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
       setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
     } finally {
