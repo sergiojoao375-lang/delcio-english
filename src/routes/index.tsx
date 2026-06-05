@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown, Play, Volume2 } from "lucide-react";
 import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
+import { SpeakingAvatar } from "@/components/speaking-avatar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -80,6 +81,7 @@ function Index() {
   const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
 
 
@@ -212,7 +214,9 @@ function Index() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
+      audio.crossOrigin = "anonymous";
       audioRef.current = audio;
+      setCurrentAudio(audio);
       audio.onplay = () => setSpeaking(true);
       audio.onended = () => {
         setSpeaking(false);
@@ -938,30 +942,16 @@ function Index() {
             ✕
           </button>
 
-          {/* Cartão da voz atual */}
+          {/* Botão de trocar voz */}
           <div className="absolute top-4 left-4 z-10">
             <button
               onClick={() => setShowVoicePicker((v) => !v)}
-              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full pl-1 pr-3 py-1 border border-white/20 flex items-center gap-2"
-              aria-label="Escolher voz"
+              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 flex items-center gap-2"
+              aria-label="Trocar voz"
+              title="Trocar voz"
             >
-              <span className="relative inline-flex">
-                <img
-                  src={getVoice(voiceId).avatar}
-                  alt={getVoice(voiceId).name}
-                  width={32}
-                  height={32}
-                  loading="lazy"
-                  className="w-8 h-8 rounded-full object-cover border border-white/30"
-                />
-                {speaking && (
-                  <span className="absolute inset-0 rounded-full border-2 border-primary animate-ping" />
-                )}
-              </span>
-              <span className="flex flex-col items-start leading-tight">
-                <span className="text-[10px] uppercase tracking-wider opacity-60">A falar com</span>
-                <span className="text-sm font-medium">{getVoice(voiceId).name}</span>
-              </span>
+              <Volume2 className="w-4 h-4" />
+              <span>Trocar voz</span>
             </button>
           </div>
 
@@ -1033,61 +1023,14 @@ function Index() {
                     : "Toque para falar"}
             </div>
 
-            {/* Orbe */}
-            <div className="relative flex items-center justify-center">
-              {/* Anel externo reativo */}
-              <div
-                className="absolute rounded-full border border-primary/40"
-                style={{
-                  width: 260,
-                  height: 260,
-                  opacity: 0.25 + voiceLevel * 0.55,
-                  transform: `scale(${1 + voiceLevel * 0.35})`,
-                  transition: "opacity 80ms linear, transform 80ms linear",
-                }}
-              />
-              <div
-                className="absolute rounded-full border border-primary/30"
-                style={{
-                  width: 320,
-                  height: 320,
-                  opacity: 0.15 + voiceLevel * 0.4,
-                  transform: `scale(${1 + voiceLevel * 0.5})`,
-                  transition: "opacity 100ms linear, transform 100ms linear",
-                }}
-              />
-              {/* Pulso quando a gravar */}
-              {recording && (
-                <div
-                  className="absolute rounded-full border-2 border-primary/50 voice-orb-pulse"
-                  style={{ width: 300, height: 300 }}
-                />
-              )}
-              {/* Orbe principal reativo */}
-              <div
-                className={`relative rounded-full ${
-                  loading
-                    ? "voice-orb-spin"
-                    : recording || speaking
-                      ? ""
-                      : "voice-orb-breathe"
-                }`}
-                style={{
-                  width: 220,
-                  height: 220,
-                  background:
-                    "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--primary) 85%, white), var(--primary) 55%, var(--primary-dark) 100%)",
-                  boxShadow: `0 0 ${60 + voiceLevel * 100}px ${10 + voiceLevel * 24}px color-mix(in oklab, var(--primary) ${50 + voiceLevel * 35}%, transparent), inset 0 0 60px rgba(255,255,255,0.18)`,
-                  filter: `blur(0.3px) brightness(${1 + voiceLevel * 0.55}) saturate(${1 + voiceLevel * 0.4})`,
-                  transform:
-                    recording || speaking
-                      ? `scale(${1 + voiceLevel * 0.32})`
-                      : undefined,
-                  transition:
-                    "transform 70ms linear, box-shadow 70ms linear, filter 70ms linear",
-                }}
-              />
-            </div>
+            {/* Avatar a falar (lip-sync) */}
+            <SpeakingAvatar
+              avatar={getVoice(voiceId).avatar}
+              name={getVoice(voiceId).name}
+              audio={currentAudio}
+              speaking={speaking}
+              size={280}
+            />
 
             {/* Waveform reativa */}
             <Waveform level={voiceLevel} active={recording || speaking || loading} />
