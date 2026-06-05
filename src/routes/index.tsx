@@ -443,7 +443,7 @@ function Index() {
       }
       speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
-      setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
+      setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}`, voiceId }]);
     } finally {
       setLoading(false);
     }
