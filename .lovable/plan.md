@@ -1,50 +1,30 @@
-## Vozes mais naturais com ElevenLabs (escolha do utilizador)
+## Avatares para as vozes do Delcio
 
-Substituir o `speechSynthesis` do navegador (robotizado) por **ElevenLabs TTS** — vozes humanas de alta qualidade, consistentes em qualquer dispositivo. O utilizador escolhe a voz numa lista curada de vozes amigáveis.
+Cada voz (Sarah, Laura, Lily, Matilda, Jessica, Charlie, George, Liam, Brian) vai ganhar uma cara. O utilizador passa a ver claramente *com quem* está a falar — no seletor de voz, no modo voz (junto à orbe) e nas mensagens do bot no chat.
 
-### Pré-requisito
-Adicionar a chave `ELEVENLABS_API_KEY` aos secrets do projeto. Vou pedi-la via `add_secret` quando começar a implementação. Indicações para o utilizador: criar conta em elevenlabs.io → Profile → API Keys → copiar a chave.
+### O que muda
 
-### Mudanças
+**1. Gerar 9 avatares** (`src/assets/voices/`)
+Retratos estilizados, consistentes entre si (mesmo estilo de ilustração, fundo circular suave em tom da marca, enquadramento ombros-para-cima, expressão amigável). Um por voz, combinando com a descrição (ex.: Lily = jovem e doce; George = maduro e calmo; Brian = casual). Guardados como assets via `lovable-assets` e referenciados em `src/lib/voices.ts` como `avatar: string`.
 
-**1. Novo endpoint server `src/routes/api/tts.ts`**
-- POST `{ text, voiceId }` → devolve MP3 binário (`audio/mpeg`).
-- Usa `eleven_multilingual_v2` (suporta EN e PT-BR).
-- Lê `process.env.ELEVENLABS_API_KEY`; 500 se faltar.
-- `voice_settings`: stability 0.5, similarity_boost 0.75, style 0.4, speed 1.0 — tom conversacional e quente.
-- Valida `text` (1–2000 chars) e `voiceId` contra allowlist.
+**2. `src/lib/voices.ts`**
+Adicionar campo `avatar` a cada `VoiceOption`.
 
-**2. Catálogo de vozes amigáveis `src/lib/voices.ts`**
-Lista curada (todas multilingues, soam naturais em EN e PT):
-- **Sarah** — feminina, calma, amigável (`EXAVITQu4vr4xnSDxMaL`)
-- **Laura** — feminina, animada (`FGY2WhTYpPnrIDTdsKH5`)
-- **Lily** — feminina, doce e jovem (`pFZP5JQG7iQjIQuC4Bku`)
-- **Matilda** — feminina, calorosa (`XrExE9yKIg1WjnnlVkGX`)
-- **Charlie** — masculina, natural (`IKne3meq5aSn9XLyUdCD`)
-- **George** — masculina, calma (`JBFqnCBsd6RMkjVDRZzb`)
-- **Liam** — masculina, jovem e simpática (`TX3LPaxmHKxFdv7VOQHJ`)
-- **Brian** — masculina, descontraída (`nPczCjzI2devNBz1zQrb`)
+**3. Seletor de voz (texto + modo voz) em `src/routes/index.tsx`**
+- Botão "Voz: [Nome]" passa a mostrar o avatar circular (24px) + nome.
+- Painel de escolha: cada voz aparece como linha com avatar (40px) + nome + descrição + botão "Ouvir". A voz selecionada fica com anel verde à volta do avatar.
 
-Cada entrada: `{ id, name, gender, description }`.
+**4. Modo voz (orbe central)**
+- Pequeno cartão flutuante no canto superior esquerdo com avatar + nome da voz atual (substitui o botão de texto simples).
+- Quando o Delcio está a falar (`speaking === true`), o avatar ganha um anel pulsante verde sincronizado com a orbe, reforçando "é esta pessoa que está a falar agora".
 
-**3. `src/routes/index.tsx`**
-- Remover lógica de `speechSynthesis.getVoices()` e do `<select>` de vozes do SO (adicionado na iteração anterior).
-- Novo estado `voiceId` persistido em `localStorage` (default: Sarah).
-- Reescrever `speak(text)`:
-  - `fetch('/api/tts', { method: 'POST', body: { text, voiceId } })`
-  - `response.blob()` → `URL.createObjectURL` → `new Audio(url)` → `play()`
-  - Ligar `onplay`/`onended`/`onerror` a `setSpeaking`.
-  - Guardar ref do `Audio` atual para poder cancelar quando o utilizador fecha o modo voz ou começa a falar.
-  - Fallback: se o fetch falhar (offline, 429, 402), mostrar toast e cair em `speechSynthesis` como backup.
-- Substituir o `<select>` atual por um picker mais cuidado no canto superior esquerdo do modo voz:
-  - Mostra a voz atual com nome + género.
-  - Clicar abre um pequeno painel com a lista das 8 vozes, cada uma com nome, descrição e botão "▶ Ouvir" (toca uma amostra curta de ~3 s da voz).
-  - Selecionar fecha o painel e guarda em localStorage.
+**5. Mensagens do bot no chat**
+- Cada bolha do bot passa a ter o avatar da voz selecionada à esquerda (32px). Se o utilizador mudar de voz, as novas mensagens usam o novo avatar (mensagens antigas mantêm o avatar com que foram criadas — guardado no objeto da mensagem).
 
 ### Fora do âmbito
-- Sem mudanças no chat, orbe, waveform, auth, base de dados, ou modo offline.
-- Sem streaming TTS (mantém-se simples — MP3 completo). Posso adicionar depois se for lento.
+- Não muda lógica de TTS, chat, correções faladas, orbe, auth ou offline.
+- Sem animações de boca/lip-sync (apenas o anel pulsante durante a fala).
+- Mantém-se as 9 vozes atuais; sem adicionar/remover.
 
-### Notas técnicas
-- ElevenLabs é pago após free tier (~10k chars/mês grátis). Vou comunicar isto ao utilizador quando pedir a chave.
-- Em offline, salta o fetch e usa o `speechSynthesis` (que já funciona sem rede).
+### Notas
+- Os 9 avatares são gerados em paralelo com `imagegen` (estilo: ilustração flat moderna, paleta quente, fundo circular verde-claro da marca) para garantir coerência visual.

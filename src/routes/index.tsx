@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown, Play, Volume2 } from "lucide-react";
-import { VOICES, DEFAULT_VOICE_ID } from "@/lib/voices";
+import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -26,7 +26,7 @@ export const Route = createFileRoute("/")({
 type LearningLang = "en" | "pt";
 
 type Bubble =
-  | { id: string; kind: "bot"; text: string; translation?: string }
+  | { id: string; kind: "bot"; text: string; translation?: string; voiceId?: string }
   | { id: string; kind: "user"; text: string }
   | { id: string; kind: "correction"; text: string };
 
@@ -396,11 +396,11 @@ function Index() {
       const newBubbles: Bubble[] = [];
       if (correction)
         newBubbles.push({ id: uid(), kind: "correction", text: correction });
-      newBubbles.push({ id: uid(), kind: "bot", text: rest });
+      newBubbles.push({ id: uid(), kind: "bot", text: rest, voiceId });
       setBubbles(newBubbles);
       speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
-      setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
+      setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}`, voiceId }]);
     } finally {
       setLoading(false);
     }
@@ -430,7 +430,7 @@ function Index() {
       setBubbles((prev) => {
         const out = [...prev];
         if (correction) out.push({ id: uid(), kind: "correction", text: correction });
-        out.push({ id: uid(), kind: "bot", text: rest });
+        out.push({ id: uid(), kind: "bot", text: rest, voiceId });
         return out;
       });
 
@@ -443,7 +443,7 @@ function Index() {
       }
       speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
-      setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
+      setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text: `⚠️ ${e.message}`, voiceId }]);
     } finally {
       setLoading(false);
     }
@@ -741,16 +741,27 @@ function Index() {
                 </div>
               );
             }
+            const botVoice = getVoice(b.voiceId || voiceId);
             return (
-              <div key={b.id} className="flex justify-start bubble-in flex-col gap-1.5">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-bot-bubble text-bot-bubble-foreground px-4 py-2.5 shadow whitespace-pre-line">
-                  {b.text}
-                </div>
-                {b.translation && (
-                  <div className="max-w-[85%] rounded-2xl bg-translation text-translation-foreground px-4 py-2 italic text-sm shadow border border-blue-200/50">
-                    🌐 {b.translation}
+              <div key={b.id} className="flex justify-start bubble-in items-end gap-2">
+                <img
+                  src={botVoice.avatar}
+                  alt={botVoice.name}
+                  loading="lazy"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+                />
+                <div className="flex flex-col gap-1.5 max-w-[85%]">
+                  <div className="rounded-2xl rounded-bl-sm bg-bot-bubble text-bot-bubble-foreground px-4 py-2.5 shadow whitespace-pre-line">
+                    {b.text}
                   </div>
-                )}
+                  {b.translation && (
+                    <div className="rounded-2xl bg-translation text-translation-foreground px-4 py-2 italic text-sm shadow border border-blue-200/50">
+                      🌐 {b.translation}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -802,11 +813,18 @@ function Index() {
             <div className="relative">
               <button
                 onClick={() => setShowVoicePicker((v) => !v)}
-                className="rounded-full px-3 py-1 border border-border hover:bg-secondary flex items-center gap-1"
+                className="rounded-full pl-1 pr-3 py-0.5 border border-border hover:bg-secondary flex items-center gap-1.5"
                 title="Escolher voz do professor"
               >
-                <Volume2 className="w-3.5 h-3.5" />
-                Voz: {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+                <img
+                  src={getVoice(voiceId).avatar}
+                  alt={getVoice(voiceId).name}
+                  width={24}
+                  height={24}
+                  loading="lazy"
+                  className="w-6 h-6 rounded-full object-cover border border-border"
+                />
+                <span>{getVoice(voiceId).name}</span>
               </button>
               {showVoicePicker && mode === "text" && (
                 <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
@@ -821,6 +839,14 @@ function Index() {
                             active ? "bg-primary/15 border-primary/60" : "bg-secondary/40 border-border hover:bg-secondary"
                           }`}
                         >
+                          <img
+                            src={v.avatar}
+                            alt={v.name}
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            className={`w-10 h-10 rounded-full object-cover shrink-0 border-2 ${active ? "border-primary" : "border-transparent"}`}
+                          />
                           <button onClick={() => selectVoice(v.id)} className="flex-1 text-left">
                             <div className="text-sm font-medium flex items-center gap-1.5">
                               {v.name}
@@ -912,15 +938,30 @@ function Index() {
             ✕
           </button>
 
-          {/* Botão de escolher voz */}
+          {/* Cartão da voz atual */}
           <div className="absolute top-4 left-4 z-10">
             <button
               onClick={() => setShowVoicePicker((v) => !v)}
-              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 flex items-center gap-1.5"
+              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full pl-1 pr-3 py-1 border border-white/20 flex items-center gap-2"
               aria-label="Escolher voz"
             >
-              <Volume2 className="w-3.5 h-3.5" />
-              {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+              <span className="relative inline-flex">
+                <img
+                  src={getVoice(voiceId).avatar}
+                  alt={getVoice(voiceId).name}
+                  width={32}
+                  height={32}
+                  loading="lazy"
+                  className="w-8 h-8 rounded-full object-cover border border-white/30"
+                />
+                {speaking && (
+                  <span className="absolute inset-0 rounded-full border-2 border-primary animate-ping" />
+                )}
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-[10px] uppercase tracking-wider opacity-60">A falar com</span>
+                <span className="text-sm font-medium">{getVoice(voiceId).name}</span>
+              </span>
             </button>
           </div>
 
@@ -939,6 +980,14 @@ function Index() {
                           : "bg-white/5 border-white/10 hover:bg-white/10"
                       }`}
                     >
+                      <img
+                        src={v.avatar}
+                        alt={v.name}
+                        width={40}
+                        height={40}
+                        loading="lazy"
+                        className={`w-10 h-10 rounded-full object-cover shrink-0 border-2 ${active ? "border-primary" : "border-white/10"}`}
+                      />
                       <button
                         onClick={() => selectVoice(v.id)}
                         className="flex-1 text-left"
