@@ -839,6 +839,14 @@ function Index() {
                             active ? "bg-primary/15 border-primary/60" : "bg-secondary/40 border-border hover:bg-secondary"
                           }`}
                         >
+                          <img
+                            src={v.avatar}
+                            alt={v.name}
+                            width={40}
+                            height={40}
+                            loading="lazy"
+                            className={`w-10 h-10 rounded-full object-cover shrink-0 border-2 ${active ? "border-primary" : "border-transparent"}`}
+                          />
                           <button onClick={() => selectVoice(v.id)} className="flex-1 text-left">
                             <div className="text-sm font-medium flex items-center gap-1.5">
                               {v.name}
