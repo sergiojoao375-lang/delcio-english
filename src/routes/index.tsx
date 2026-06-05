@@ -400,7 +400,7 @@ function Index() {
       setBubbles(newBubbles);
       speak(correction ? `${correction}. ${rest}` : rest);
     } catch (e: any) {
-      setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}` }]);
+      setBubbles([{ id: uid(), kind: "bot", text: `⚠️ ${e.message}`, voiceId }]);
     } finally {
       setLoading(false);
     }
