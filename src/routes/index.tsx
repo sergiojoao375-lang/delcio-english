@@ -980,6 +980,14 @@ function Index() {
                           : "bg-white/5 border-white/10 hover:bg-white/10"
                       }`}
                     >
+                      <img
+                        src={v.avatar}
+                        alt={v.name}
+                        width={40}
+                        height={40}
+                        loading="lazy"
+                        className={`w-10 h-10 rounded-full object-cover shrink-0 border-2 ${active ? "border-primary" : "border-white/10"}`}
+                      />
                       <button
                         onClick={() => selectVoice(v.id)}
                         className="flex-1 text-left"
