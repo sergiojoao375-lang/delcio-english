@@ -163,3 +163,8 @@
   100% { transform: rotate(360deg) scale(1.02); }
 }
 .voice-orb-spin { animation: voice-orb-spin 2.5s linear infinite; }
+
+@keyframes avatar-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.018); }
+}
