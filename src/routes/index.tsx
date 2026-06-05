@@ -26,7 +26,7 @@ export const Route = createFileRoute("/")({
 type LearningLang = "en" | "pt";
 
 type Bubble =
-  | { id: string; kind: "bot"; text: string; translation?: string }
+  | { id: string; kind: "bot"; text: string; translation?: string; voiceId?: string }
   | { id: string; kind: "user"; text: string }
   | { id: string; kind: "correction"; text: string };
 
