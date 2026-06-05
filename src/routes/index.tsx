@@ -213,7 +213,9 @@ function Index() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
+      audio.crossOrigin = "anonymous";
       audioRef.current = audio;
+      setCurrentAudio(audio);
       audio.onplay = () => setSpeaking(true);
       audio.onended = () => {
         setSpeaking(false);
