@@ -938,15 +938,30 @@ function Index() {
             ✕
           </button>
 
-          {/* Botão de escolher voz */}
+          {/* Cartão da voz atual */}
           <div className="absolute top-4 left-4 z-10">
             <button
               onClick={() => setShowVoicePicker((v) => !v)}
-              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full px-3 py-2 border border-white/20 flex items-center gap-1.5"
+              className="bg-white/10 hover:bg-white/20 text-white text-xs rounded-full pl-1 pr-3 py-1 border border-white/20 flex items-center gap-2"
               aria-label="Escolher voz"
             >
-              <Volume2 className="w-3.5 h-3.5" />
-              {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+              <span className="relative inline-flex">
+                <img
+                  src={getVoice(voiceId).avatar}
+                  alt={getVoice(voiceId).name}
+                  width={32}
+                  height={32}
+                  loading="lazy"
+                  className="w-8 h-8 rounded-full object-cover border border-white/30"
+                />
+                {speaking && (
+                  <span className="absolute inset-0 rounded-full border-2 border-primary animate-ping" />
+                )}
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="text-[10px] uppercase tracking-wider opacity-60">A falar com</span>
+                <span className="text-sm font-medium">{getVoice(voiceId).name}</span>
+              </span>
             </button>
           </div>
 
