@@ -813,11 +813,18 @@ function Index() {
             <div className="relative">
               <button
                 onClick={() => setShowVoicePicker((v) => !v)}
-                className="rounded-full px-3 py-1 border border-border hover:bg-secondary flex items-center gap-1"
+                className="rounded-full pl-1 pr-3 py-0.5 border border-border hover:bg-secondary flex items-center gap-1.5"
                 title="Escolher voz do professor"
               >
-                <Volume2 className="w-3.5 h-3.5" />
-                Voz: {VOICES.find((v) => v.id === voiceId)?.name || "Voz"}
+                <img
+                  src={getVoice(voiceId).avatar}
+                  alt={getVoice(voiceId).name}
+                  width={24}
+                  height={24}
+                  loading="lazy"
+                  className="w-6 h-6 rounded-full object-cover border border-border"
+                />
+                <span>{getVoice(voiceId).name}</span>
               </button>
               {showVoicePicker && mode === "text" && (
                 <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
