@@ -741,16 +741,27 @@ function Index() {
                 </div>
               );
             }
+            const botVoice = getVoice(b.voiceId || voiceId);
             return (
-              <div key={b.id} className="flex justify-start bubble-in flex-col gap-1.5">
-                <div className="max-w-[85%] rounded-2xl rounded-bl-sm bg-bot-bubble text-bot-bubble-foreground px-4 py-2.5 shadow whitespace-pre-line">
-                  {b.text}
-                </div>
-                {b.translation && (
-                  <div className="max-w-[85%] rounded-2xl bg-translation text-translation-foreground px-4 py-2 italic text-sm shadow border border-blue-200/50">
-                    🌐 {b.translation}
+              <div key={b.id} className="flex justify-start bubble-in items-end gap-2">
+                <img
+                  src={botVoice.avatar}
+                  alt={botVoice.name}
+                  loading="lazy"
+                  width={32}
+                  height={32}
+                  className="w-8 h-8 rounded-full object-cover border border-border shrink-0"
+                />
+                <div className="flex flex-col gap-1.5 max-w-[85%]">
+                  <div className="rounded-2xl rounded-bl-sm bg-bot-bubble text-bot-bubble-foreground px-4 py-2.5 shadow whitespace-pre-line">
+                    {b.text}
                   </div>
-                )}
+                  {b.translation && (
+                    <div className="rounded-2xl bg-translation text-translation-foreground px-4 py-2 italic text-sm shadow border border-blue-200/50">
+                      🌐 {b.translation}
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
