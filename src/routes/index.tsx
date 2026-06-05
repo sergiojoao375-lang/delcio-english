@@ -430,7 +430,7 @@ function Index() {
       setBubbles((prev) => {
         const out = [...prev];
         if (correction) out.push({ id: uid(), kind: "correction", text: correction });
-        out.push({ id: uid(), kind: "bot", text: rest });
+        out.push({ id: uid(), kind: "bot", text: rest, voiceId });
         return out;
       });
 
