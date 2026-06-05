@@ -1037,61 +1037,14 @@ function Index() {
                     : "Toque para falar"}
             </div>
 
-            {/* Orbe */}
-            <div className="relative flex items-center justify-center">
-              {/* Anel externo reativo */}
-              <div
-                className="absolute rounded-full border border-primary/40"
-                style={{
-                  width: 260,
-                  height: 260,
-                  opacity: 0.25 + voiceLevel * 0.55,
-                  transform: `scale(${1 + voiceLevel * 0.35})`,
-                  transition: "opacity 80ms linear, transform 80ms linear",
-                }}
-              />
-              <div
-                className="absolute rounded-full border border-primary/30"
-                style={{
-                  width: 320,
-                  height: 320,
-                  opacity: 0.15 + voiceLevel * 0.4,
-                  transform: `scale(${1 + voiceLevel * 0.5})`,
-                  transition: "opacity 100ms linear, transform 100ms linear",
-                }}
-              />
-              {/* Pulso quando a gravar */}
-              {recording && (
-                <div
-                  className="absolute rounded-full border-2 border-primary/50 voice-orb-pulse"
-                  style={{ width: 300, height: 300 }}
-                />
-              )}
-              {/* Orbe principal reativo */}
-              <div
-                className={`relative rounded-full ${
-                  loading
-                    ? "voice-orb-spin"
-                    : recording || speaking
-                      ? ""
-                      : "voice-orb-breathe"
-                }`}
-                style={{
-                  width: 220,
-                  height: 220,
-                  background:
-                    "radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--primary) 85%, white), var(--primary) 55%, var(--primary-dark) 100%)",
-                  boxShadow: `0 0 ${60 + voiceLevel * 100}px ${10 + voiceLevel * 24}px color-mix(in oklab, var(--primary) ${50 + voiceLevel * 35}%, transparent), inset 0 0 60px rgba(255,255,255,0.18)`,
-                  filter: `blur(0.3px) brightness(${1 + voiceLevel * 0.55}) saturate(${1 + voiceLevel * 0.4})`,
-                  transform:
-                    recording || speaking
-                      ? `scale(${1 + voiceLevel * 0.32})`
-                      : undefined,
-                  transition:
-                    "transform 70ms linear, box-shadow 70ms linear, filter 70ms linear",
-                }}
-              />
-            </div>
+            {/* Avatar a falar (lip-sync) */}
+            <SpeakingAvatar
+              avatar={getVoice(voiceId).avatar}
+              name={getVoice(voiceId).name}
+              audio={currentAudio}
+              speaking={speaking}
+              size={280}
+            />
 
             {/* Waveform reativa */}
             <Waveform level={voiceLevel} active={recording || speaking || loading} />
