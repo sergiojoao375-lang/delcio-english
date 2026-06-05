@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown, Play, Volume2 } from "lucide-react";
 import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
+import { SpeakingAvatar } from "@/components/speaking-avatar";
 
 export const Route = createFileRoute("/")({
   head: () => ({
