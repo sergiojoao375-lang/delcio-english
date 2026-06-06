@@ -98,8 +98,11 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
     };
   }, []);
 
-  // Subtle "jaw" deformation based on volume — gives life without overlay
-  const jawScaleY = 1 + mouth * 0.012;
+  // Jaw opening — pronounced movement of the lower half of the face
+  const open = mouth; // 0..1
+  const jawShiftPx = open * (size * 0.045);
+  const jawScaleY = 1 + open * 0.08;
+  const SPLIT = 62; // % from top where the jaw splits
 
   return (
     <div
@@ -126,7 +129,7 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
         </>
       )}
 
-      {/* Avatar with breathing */}
+      {/* Avatar with breathing + jaw split */}
       <div
         className="relative rounded-full overflow-hidden shadow-2xl"
         style={{
@@ -139,15 +142,43 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
           border: "3px solid color-mix(in oklab, var(--primary) 70%, white 10%)",
         }}
       >
+        {/* Upper half (static) */}
         <img
           src={avatar}
           alt={name}
-          className="w-full h-full object-cover select-none pointer-events-none"
+          className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
+          draggable={false}
+          style={{ clipPath: `inset(0 0 ${100 - SPLIT}% 0)` }}
+        />
+
+        {/* Lower half (jaw) — translates down + stretches with audio */}
+        <img
+          src={avatar}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
           draggable={false}
           style={{
-            transform: `scaleY(${jawScaleY})`,
+            clipPath: `inset(${SPLIT}% 0 0 0)`,
+            transform: `translateY(${jawShiftPx}px) scaleY(${jawScaleY})`,
             transformOrigin: "center top",
-            transition: "transform 70ms linear",
+            transition: "transform 60ms linear",
+          }}
+        />
+
+        {/* Dark gap (open mouth) */}
+        <div
+          aria-hidden
+          className="absolute left-1/2 pointer-events-none"
+          style={{
+            top: `${SPLIT}%`,
+            transform: "translateX(-50%)",
+            width: `${size * 0.22}px`,
+            height: `${jawShiftPx}px`,
+            background: "linear-gradient(to bottom, rgba(40,10,15,0.9), rgba(20,5,8,0.95))",
+            borderRadius: "9999px",
+            opacity: open > 0.05 ? 1 : 0,
+            transition: "opacity 60ms linear",
           }}
         />
 
