@@ -98,12 +98,8 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
     };
   }, []);
 
-  // Mouth geometry (relative to avatar image, viewBox 0..100)
-  // Avatares são gerados com enquadramento ombros-para-cima, boca ~y55
-  const mouthCx = 50;
-  const mouthCy = 56;
-  const mouthW = 11 + mouth * 5; // wider when louder
-  const mouthH = 1.5 + mouth * 11;
+  // Subtle "jaw" deformation based on volume — gives life without overlay
+  const jawScaleY = 1 + mouth * 0.012;
 
   return (
     <div
@@ -148,6 +144,11 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
           alt={name}
           className="w-full h-full object-cover select-none pointer-events-none"
           draggable={false}
+          style={{
+            transform: `scaleY(${jawScaleY})`,
+            transformOrigin: "center top",
+            transition: "transform 70ms linear",
+          }}
         />
 
         {/* Eyelid blink overlay (very subtle, top quarter) */}
@@ -157,55 +158,15 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
           style={{
             top: "32%",
             height: "10%",
-            background:
-              "linear-gradient(to bottom, color-mix(in oklab, currentColor 0%, transparent) 0%, rgba(0,0,0,0.0) 100%)",
             transformOrigin: "center top",
             transform: blink ? "scaleY(1)" : "scaleY(0)",
             transition: blink ? "transform 90ms ease-in" : "transform 160ms ease-out",
-            backgroundColor: blink ? "rgba(0,0,0,0.25)" : "transparent",
+            backgroundColor: blink ? "rgba(0,0,0,0.18)" : "transparent",
             mixBlendMode: "multiply",
           }}
         />
-
-        {/* Mouth SVG overlay */}
-        <svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="absolute inset-0 w-full h-full pointer-events-none"
-        >
-          {/* Soft shadow under mouth */}
-          <ellipse
-            cx={mouthCx}
-            cy={mouthCy + mouthH * 0.25}
-            rx={mouthW * 0.55}
-            ry={Math.max(0.6, mouthH * 0.45)}
-            fill="rgba(0,0,0,0.18)"
-          />
-          {/* Mouth body */}
-          <ellipse
-            cx={mouthCx}
-            cy={mouthCy}
-            rx={mouthW / 2}
-            ry={Math.max(0.7, mouthH / 2)}
-            fill="#3a1212"
-            stroke="rgba(0,0,0,0.35)"
-            strokeWidth={0.4}
-            style={{ transition: "rx 60ms linear, ry 60ms linear" }}
-          />
-          {/* Upper-teeth hint when slightly open */}
-          {mouth > 0.15 && (
-            <rect
-              x={mouthCx - mouthW / 2 + 1.2}
-              y={mouthCy - mouthH / 2 + 0.3}
-              width={mouthW - 2.4}
-              height={Math.min(1.6, mouthH * 0.22)}
-              rx={0.6}
-              fill="#f6efe6"
-              opacity={Math.min(1, (mouth - 0.15) * 2.5)}
-            />
-          )}
-        </svg>
       </div>
+
 
       {/* Name caption */}
       <div className="absolute -bottom-10 left-0 right-0 text-center">
