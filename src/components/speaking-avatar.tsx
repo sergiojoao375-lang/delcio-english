@@ -98,10 +98,11 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
     };
   }, []);
 
-  // Mouth geometry (relative to avatar circle)
+  // Mouth geometry (relative to avatar image, viewBox 0..100)
+  // Avatares são gerados com enquadramento ombros-para-cima, boca ~y55
   const mouthCx = 50;
-  const mouthCy = 72;
-  const mouthW = 14 + mouth * 6; // wider when louder
+  const mouthCy = 56;
+  const mouthW = 11 + mouth * 5; // wider when louder
   const mouthH = 1.5 + mouth * 11;
 
   return (
