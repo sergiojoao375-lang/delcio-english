@@ -8,7 +8,6 @@ type Props = {
   size?: number;
 };
 
-// Module-singleton AudioContext + map of already-connected media elements
 let audioCtx: AudioContext | null = null;
 const connected = new WeakMap<HTMLMediaElement, { analyser: AnalyserNode }>();
 
@@ -31,7 +30,7 @@ function attach(el: HTMLMediaElement): AnalyserNode | null {
     const source = ctx.createMediaElementSource(el);
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
-    analyser.smoothingTimeConstant = 0.65;
+    analyser.smoothingTimeConstant = 0.6;
     source.connect(analyser);
     analyser.connect(ctx.destination);
     connected.set(el, { analyser });
@@ -42,11 +41,10 @@ function attach(el: HTMLMediaElement): AnalyserNode | null {
 }
 
 export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Props) {
-  const [mouth, setMouth] = useState(0); // 0..1 opening
+  const [mouth, setMouth] = useState(0);
   const [blink, setBlink] = useState(false);
   const rafRef = useRef<number | null>(null);
 
-  // Lip-sync: read RMS from current audio element while speaking
   useEffect(() => {
     if (!audio || !speaking) {
       setMouth(0);
@@ -64,9 +62,9 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
         const v = (data[i] - 128) / 128;
         sum += v * v;
       }
-      const rms = Math.sqrt(sum / data.length); // ~0..0.5
-      const norm = Math.min(1, rms * 3.2);
-      setMouth((prev) => prev * 0.45 + norm * 0.55);
+      const rms = Math.sqrt(sum / data.length);
+      const norm = Math.min(1, rms * 3.5);
+      setMouth((prev) => prev * 0.5 + norm * 0.5);
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -76,7 +74,6 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
     };
   }, [audio, speaking]);
 
-  // Blink loop
   useEffect(() => {
     let cancelled = false;
     const loop = () => {
@@ -98,18 +95,18 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
     };
   }, []);
 
-  // Jaw opening — pronounced movement of the lower half of the face
-  const open = mouth; // 0..1
-  const jawShiftPx = open * (size * 0.045);
-  const jawScaleY = 1 + open * 0.08;
-  const SPLIT = 62; // % from top where the jaw splits
+  const open = mouth;
+  // Mouth position (approximate for these portrait avatars)
+  const mouthTopPct = 72; // % from top
+  const mouthCenterXPct = 50;
+  const mouthWidth = size * 0.18;
+  const mouthHeight = 4 + open * (size * 0.06);
 
   return (
     <div
       className="relative flex items-center justify-center"
       style={{ width: size, height: size }}
     >
-      {/* Outer pulse rings while speaking */}
       {speaking && (
         <>
           <span
@@ -129,7 +126,6 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
         </>
       )}
 
-      {/* Avatar with breathing + jaw split */}
       <div
         className="relative rounded-full overflow-hidden shadow-2xl"
         style={{
@@ -142,47 +138,38 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
           border: "3px solid color-mix(in oklab, var(--primary) 70%, white 10%)",
         }}
       >
-        {/* Upper half (static) */}
         <img
           src={avatar}
           alt={name}
           className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
           draggable={false}
-          style={{ clipPath: `inset(0 0 ${100 - SPLIT}% 0)` }}
-        />
-
-        {/* Lower half (jaw) — translates down + stretches with audio */}
-        <img
-          src={avatar}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-          draggable={false}
           style={{
-            clipPath: `inset(${SPLIT}% 0 0 0)`,
-            transform: `translateY(${jawShiftPx}px) scaleY(${jawScaleY})`,
+            transform: `scaleY(${1 + open * 0.015})`,
             transformOrigin: "center top",
             transition: "transform 60ms linear",
           }}
         />
 
-        {/* Dark gap (open mouth) */}
+        {/* Mouth opening — small dark ellipse right at the lips */}
         <div
           aria-hidden
-          className="absolute left-1/2 pointer-events-none"
+          className="absolute pointer-events-none"
           style={{
-            top: `${SPLIT}%`,
-            transform: "translateX(-50%)",
-            width: `${size * 0.22}px`,
-            height: `${jawShiftPx}px`,
-            background: "linear-gradient(to bottom, rgba(40,10,15,0.9), rgba(20,5,8,0.95))",
+            top: `${mouthTopPct}%`,
+            left: `${mouthCenterXPct}%`,
+            width: mouthWidth,
+            height: mouthHeight,
+            transform: "translate(-50%, -50%)",
+            background:
+              "radial-gradient(ellipse at center, rgba(30,8,12,0.85) 0%, rgba(30,8,12,0.6) 60%, rgba(30,8,12,0) 100%)",
             borderRadius: "9999px",
-            opacity: open > 0.05 ? 1 : 0,
-            transition: "opacity 60ms linear",
+            opacity: open > 0.08 ? Math.min(1, open * 1.4) : 0,
+            transition: "opacity 60ms linear, height 60ms linear",
+            filter: "blur(1.5px)",
           }}
         />
 
-        {/* Eyelid blink overlay (very subtle, top quarter) */}
+        {/* Blink */}
         <div
           aria-hidden
           className="absolute left-0 right-0 pointer-events-none"
@@ -198,8 +185,6 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
         />
       </div>
 
-
-      {/* Name caption */}
       <div className="absolute -bottom-10 left-0 right-0 text-center">
         <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
           {speaking ? "A falar" : "Voz"}
