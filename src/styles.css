@@ -168,3 +168,39 @@
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.018); }
 }
+
+@keyframes ai-core-breathe {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(15deg) brightness(1.08); }
+}
+.ai-core-breathe { animation: ai-core-breathe 6s ease-in-out infinite; }
+
+@keyframes ai-ring-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ai-ring-spin-slow { animation: ai-ring-spin-slow 18s linear infinite; }
+
+@keyframes ai-ring-spin-rev {
+  from { transform: rotate(360deg); }
+  to { transform: rotate(0deg); }
+}
+.ai-ring-spin-rev { animation: ai-ring-spin-rev 24s linear infinite; }
+
+@keyframes ai-shimmer {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ai-shimmer { animation: ai-shimmer 8s linear infinite; }
+
+@keyframes ai-wave {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+.ai-wave { animation: ai-wave 1.8s ease-out infinite; }
+
+@keyframes ai-particle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+.ai-particle { animation: ai-particle 2.4s ease-in-out infinite; }

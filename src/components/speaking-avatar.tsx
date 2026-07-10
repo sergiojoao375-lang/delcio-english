@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 type Props = {
-  avatar: string;
+  avatar?: string;
   name: string;
   audio: HTMLAudioElement | null;
   speaking: boolean;
@@ -40,14 +40,17 @@ function attach(el: HTMLMediaElement): AnalyserNode | null {
   }
 }
 
-export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Props) {
-  const [mouth, setMouth] = useState(0);
-  const [blink, setBlink] = useState(false);
+/**
+ * AI Presence — an abstract, elegant visualization for conversing with the AI.
+ * Reactive to voice: core sphere pulses, aurora rings expand, particles drift.
+ */
+export function SpeakingAvatar({ name, audio, speaking, size = 320 }: Props) {
+  const [level, setLevel] = useState(0);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!audio || !speaking) {
-      setMouth(0);
+      setLevel(0);
       return;
     }
     const ctx = getCtx();
@@ -64,132 +67,184 @@ export function SpeakingAvatar({ avatar, name, audio, speaking, size = 280 }: Pr
       }
       const rms = Math.sqrt(sum / data.length);
       const norm = Math.min(1, rms * 3.5);
-      setMouth((prev) => prev * 0.5 + norm * 0.5);
+      setLevel((prev) => prev * 0.55 + norm * 0.45);
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      setMouth(0);
+      setLevel(0);
     };
   }, [audio, speaking]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const loop = () => {
-      if (cancelled) return;
-      const wait = 3500 + Math.random() * 3000;
-      setTimeout(() => {
-        if (cancelled) return;
-        setBlink(true);
-        setTimeout(() => {
-          if (cancelled) return;
-          setBlink(false);
-          loop();
-        }, 140);
-      }, wait);
-    };
-    loop();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const open = mouth;
-  // Mouth position (approximate for these portrait avatars)
-  const mouthTopPct = 72; // % from top
-  const mouthCenterXPct = 50;
-  const mouthWidth = size * 0.18;
-  const mouthHeight = 4 + open * (size * 0.06);
+  const l = level;
+  const core = size * 0.42;
+  const ring1 = size * 0.72;
+  const ring2 = size * 0.9;
+  const ring3 = size * 1.08;
 
   return (
     <div
       className="relative flex items-center justify-center"
       style={{ width: size, height: size }}
     >
+      {/* Ambient outer glow */}
+      <div
+        aria-hidden
+        className="absolute rounded-full"
+        style={{
+          width: size * 1.6,
+          height: size * 1.6,
+          background:
+            "radial-gradient(circle, color-mix(in oklab, var(--primary) 35%, transparent) 0%, transparent 65%)",
+          opacity: 0.35 + l * 0.4,
+          filter: "blur(20px)",
+          transition: "opacity 100ms linear",
+        }}
+      />
+
+      {/* Rotating aurora rings */}
+      <div
+        aria-hidden
+        className="absolute rounded-full ai-ring-spin-slow"
+        style={{
+          width: ring3,
+          height: ring3,
+          background:
+            "conic-gradient(from 0deg, transparent 0%, color-mix(in oklab, var(--primary) 55%, #7de1ff 45%) 20%, transparent 40%, color-mix(in oklab, var(--primary) 65%, #b6f3d6 30%) 65%, transparent 85%)",
+          maskImage:
+            "radial-gradient(circle, transparent 46%, black 48%, black 50%, transparent 52%)",
+          WebkitMaskImage:
+            "radial-gradient(circle, transparent 46%, black 48%, black 50%, transparent 52%)",
+          opacity: 0.7,
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute rounded-full ai-ring-spin-rev"
+        style={{
+          width: ring2,
+          height: ring2,
+          background:
+            "conic-gradient(from 90deg, transparent 0%, color-mix(in oklab, var(--primary) 80%, white 10%) 25%, transparent 55%, color-mix(in oklab, var(--primary) 50%, #a5f3fc 50%) 80%, transparent 100%)",
+          maskImage:
+            "radial-gradient(circle, transparent 45%, black 47%, black 50%, transparent 53%)",
+          WebkitMaskImage:
+            "radial-gradient(circle, transparent 45%, black 47%, black 50%, transparent 53%)",
+          opacity: 0.55,
+        }}
+      />
+
+      {/* Reactive pulse ring */}
+      <div
+        aria-hidden
+        className="absolute rounded-full"
+        style={{
+          width: ring1,
+          height: ring1,
+          border: "1px solid color-mix(in oklab, var(--primary) 60%, transparent)",
+          transform: `scale(${1 + l * 0.15})`,
+          opacity: 0.4 + l * 0.5,
+          transition: "transform 80ms linear, opacity 80ms linear",
+          boxShadow:
+            "inset 0 0 40px color-mix(in oklab, var(--primary) 25%, transparent)",
+        }}
+      />
+
+      {/* Voice-reactive pulse waves when speaking */}
       {speaking && (
         <>
           <span
-            className="absolute rounded-full border-2 border-primary/60 voice-orb-pulse"
-            style={{ width: size + 30, height: size + 30 }}
+            className="absolute rounded-full border border-primary/40 ai-wave"
+            style={{ width: ring1, height: ring1, animationDelay: "0s" }}
           />
           <span
-            className="absolute rounded-full border border-primary/40"
-            style={{
-              width: size + 60,
-              height: size + 60,
-              opacity: 0.3 + mouth * 0.5,
-              transform: `scale(${1 + mouth * 0.05})`,
-              transition: "opacity 80ms linear, transform 80ms linear",
-            }}
+            className="absolute rounded-full border border-primary/30 ai-wave"
+            style={{ width: ring1, height: ring1, animationDelay: "0.7s" }}
           />
         </>
       )}
 
+      {/* Core orb — a soft nebula sphere */}
       <div
-        className="relative rounded-full overflow-hidden shadow-2xl"
+        className="relative rounded-full ai-core-breathe"
         style={{
-          width: size,
-          height: size,
-          boxShadow: speaking
-            ? `0 0 ${40 + mouth * 80}px ${6 + mouth * 18}px color-mix(in oklab, var(--primary) ${45 + mouth * 35}%, transparent)`
-            : "0 10px 40px rgba(0,0,0,0.45)",
-          animation: "avatar-breathe 4.5s ease-in-out infinite",
-          border: "3px solid color-mix(in oklab, var(--primary) 70%, white 10%)",
+          width: core,
+          height: core,
+          background: `
+            radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.15) 18%, transparent 35%),
+            radial-gradient(circle at 65% 70%, color-mix(in oklab, var(--primary) 90%, #a5f3fc 10%) 0%, transparent 55%),
+            radial-gradient(circle at 30% 80%, #6ee7d4 0%, transparent 50%),
+            radial-gradient(circle at 70% 20%, #a5b4fc 0%, transparent 55%),
+            radial-gradient(circle at center, color-mix(in oklab, var(--primary) 80%, #0ea5e9 20%) 0%, #0b3d2e 100%)
+          `,
+          boxShadow: `
+            0 0 ${30 + l * 90}px ${4 + l * 20}px color-mix(in oklab, var(--primary) ${50 + l * 40}%, transparent),
+            inset 0 0 40px rgba(255,255,255,0.15),
+            inset -20px -30px 60px rgba(0,0,0,0.35)
+          `,
+          transform: `scale(${1 + l * 0.08})`,
+          transition: "transform 80ms linear, box-shadow 80ms linear",
         }}
       >
-        <img
-          src={avatar}
-          alt={name}
-          className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
-          draggable={false}
-          style={{
-            transform: `scaleY(${1 + open * 0.015})`,
-            transformOrigin: "center top",
-            transition: "transform 60ms linear",
-          }}
-        />
-
-        {/* Mouth opening — small dark ellipse right at the lips */}
+        {/* Inner shimmer */}
         <div
           aria-hidden
-          className="absolute pointer-events-none"
+          className="absolute inset-0 rounded-full ai-shimmer"
           style={{
-            top: `${mouthTopPct}%`,
-            left: `${mouthCenterXPct}%`,
-            width: mouthWidth,
-            height: mouthHeight,
-            transform: "translate(-50%, -50%)",
             background:
-              "radial-gradient(ellipse at center, rgba(30,8,12,0.85) 0%, rgba(30,8,12,0.6) 60%, rgba(30,8,12,0) 100%)",
-            borderRadius: "9999px",
-            opacity: open > 0.08 ? Math.min(1, open * 1.4) : 0,
-            transition: "opacity 60ms linear, height 60ms linear",
-            filter: "blur(1.5px)",
+              "conic-gradient(from 0deg, transparent, rgba(255,255,255,0.18), transparent, rgba(255,255,255,0.12), transparent)",
+            mixBlendMode: "screen",
+            opacity: 0.55 + l * 0.3,
           }}
         />
-
-        {/* Blink */}
+        {/* Specular highlight */}
         <div
           aria-hidden
-          className="absolute left-0 right-0 pointer-events-none"
+          className="absolute rounded-full"
           style={{
-            top: "32%",
-            height: "10%",
-            transformOrigin: "center top",
-            transform: blink ? "scaleY(1)" : "scaleY(0)",
-            transition: blink ? "transform 90ms ease-in" : "transform 160ms ease-out",
-            backgroundColor: blink ? "rgba(0,0,0,0.18)" : "transparent",
-            mixBlendMode: "multiply",
+            top: "12%",
+            left: "18%",
+            width: "35%",
+            height: "22%",
+            background:
+              "radial-gradient(ellipse at center, rgba(255,255,255,0.7) 0%, transparent 70%)",
+            filter: "blur(4px)",
           }}
         />
       </div>
 
-      <div className="absolute -bottom-10 left-0 right-0 text-center">
-        <div className="text-[10px] uppercase tracking-[0.25em] text-white/50">
-          {speaking ? "A falar" : "Voz"}
+      {/* Floating particles */}
+      {[...Array(8)].map((_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        const dist = ring1 / 2 + 10 + (i % 3) * 8;
+        const x = Math.cos(angle) * dist;
+        const y = Math.sin(angle) * dist;
+        return (
+          <span
+            key={i}
+            aria-hidden
+            className="absolute rounded-full ai-particle"
+            style={{
+              width: 4 + (i % 3),
+              height: 4 + (i % 3),
+              background:
+                "color-mix(in oklab, var(--primary) 70%, white 30%)",
+              boxShadow:
+                "0 0 8px color-mix(in oklab, var(--primary) 80%, transparent)",
+              transform: `translate(${x}px, ${y}px)`,
+              opacity: 0.5 + l * 0.5,
+              animationDelay: `${i * 0.3}s`,
+            }}
+          />
+        );
+      })}
+
+      <div className="absolute -bottom-12 left-0 right-0 text-center">
+        <div className="text-[10px] uppercase tracking-[0.3em] text-white/50">
+          {speaking ? "A responder" : "Delcio AI"}
         </div>
-        <div className="text-base font-medium text-white">{name}</div>
+        <div className="text-sm font-light text-white/80 mt-1">{name}</div>
       </div>
     </div>
   );
