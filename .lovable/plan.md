@@ -1,24 +1,39 @@
-## Tirar a "mancha" preta da boca
+## Diagnóstico
 
-O avatar do Sarah (e dos outros 8) já tem **a boca desenhada na imagem original**. O componente `SpeakingAvatar` está a desenhar por cima uma elipse escura (`fill="#3a1212"`) + sombra para simular abertura — e é isso que aparece como mancha castanha/preta sobre os lábios da Sarah.
+O erro "Erro ao falar com o Delcio" no site publicado no Netlify acontece porque:
 
-Como os avatares são ilustrações estilizadas com bocas diferentes (posição, forma, cor de batom variam), **não há posição/cor universal** que encaixe nos 9 sem ficar mal. Em vez de tentar calibrar 9 overlays, removo o overlay e uso uma técnica visual mais limpa que continua a dar a sensação de "está a falar":
+1. **O app não é um site estático** — ele usa **server functions do TanStack Start** (`src/routes/api/chat.ts` e `src/routes/api/tts.ts`) que rodam no backend, não no browser.
+2. O teu `netlify.toml` atual publica só `.output/public` (assets estáticos). As rotas `/api/chat` e `/api/tts` não existem em produção → o fetch devolve 404/HTML → falha → "Erro ao falar com o Delcio".
+3. Mesmo que o backend rodasse, faltariam as variáveis de ambiente `LOVABLE_API_KEY` e `ELEVENLABS_API_KEY` no Netlify (elas são geradas automaticamente no Lovable, mas não existem no teu painel Netlify).
 
-### Nova abordagem (sem overlay sobre a cara)
+Ou seja: **não é só configurar env vars** — o build atual não produz servidor nenhum no Netlify.
 
-Mantenho o lip-sync via Web Audio (RMS por frame), mas em vez de desenhar boca por cima, uso esse valor para:
+## Opções para resolver
 
-1. **Micro-deformação vertical do avatar** — `scaleY` muito subtil (1.0 ↔ ~1.012) com `transform-origin: top center`, dando a ilusão de mandíbula a mexer. Imperceptível parado, natural durante fala.
-2. **Pulso do anel verde** já existente, agora reativo ao volume (mais forte em sílabas tónicas).
-3. **Brilho/shadow** do avatar pulsa com volume (já existe — mantém-se).
-4. Respiração e piscar de olhos passivos — mantêm-se.
+### Opção A (recomendada): Publicar via Lovable
+Já tens `https://delcio-english.lovable.app` a funcionar. O Lovable executa as server functions e injeta as chaves automaticamente. Se quiseres domínio próprio, ligas-o em Project Settings → Domains. Zero configuração, zero custo de manutenção.
 
-Resultado: a cara da Sarah aparece **limpa, sem mancha**, e continua a "ganhar vida" sincronizada com o áudio.
+### Opção B: Manter Netlify usando o adapter oficial do TanStack Start para Netlify Functions
+Passos:
 
-### Ficheiro tocado
+1. **Ajustar `vite.config.ts`** para gerar o output de servidor no formato Netlify (`target: "netlify"` no plugin TanStack Start), de modo que o build produza uma Netlify Function que serve as rotas `/api/*` e o SSR.
+2. **Ajustar `netlify.toml`**:
+   - `publish` continua a apontar para o output estático gerado pelo adapter
+   - adicionar redirect `/* → /.netlify/functions/server 200` para o handler SSR
+3. **Configurar Environment Variables no painel Netlify** (Site settings → Environment variables):
+   - `LOVABLE_API_KEY` — precisas gerar/copiar a partir do gateway Lovable (posso gerar uma nova para ti quando implementarmos)
+   - `ELEVENLABS_API_KEY` — a mesma chave que já usas no Lovable
+   - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID` — copiar do `.env` do projeto (necessárias no build)
+4. **Rebuild + redeploy** no Netlify.
 
-- `src/components/speaking-avatar.tsx` — remover o `<svg>` com elipse da boca, sombra e dentes; aplicar `scaleY` reativo ao container do `<img>` em vez disso.
+Notas:
+- O AI Gateway do Lovable (`ai.gateway.lovable.dev`) aceita a chave a partir de qualquer host, portanto funciona fora do Lovable — o problema não é CORS nem domínio, é apenas a ausência do backend + chaves.
+- O Service Worker offline continua a funcionar normalmente.
 
-### Fora do âmbito
+## Recomendação
 
-Não mexo em TTS, vozes, seleção, bolhas, ou qualquer outra parte. Só limpeza visual do avatar grande no modo voz.
+Se o objetivo é só ter o app online publicamente, fica com a **Opção A** — usa `delcio-english.lovable.app` (ou liga um domínio próprio). É gratuito, sem configuração, e as chaves ficam geridas.
+
+Se tens uma razão específica para usar Netlify (integração com outro fluxo, domínio já lá, etc.), diz-me e avanço com a **Opção B** (adapter Netlify + env vars).
+
+**Qual das duas queres que eu implemente?**
