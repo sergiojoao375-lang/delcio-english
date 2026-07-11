@@ -1,0 +1,99 @@
+// Netlify Function mirror of src/routes/api/chat.ts
+// Keeps the same request/response contract so the frontend works unchanged.
+
+function buildSystemPrompt(userName, learningLang) {
+  const target = learningLang === "en" ? "English" : "Português";
+  const native = learningLang === "en" ? "Português" : "English";
+  return `You are "Delcio", a friendly, patient beginner language teacher.
+The student's name is ${userName}. They are learning ${target} and their native language is ${native}.
+
+STRICT RULES (follow EVERY message):
+1. If the student's message has any grammar, spelling, or vocabulary mistake in ${target}, START your reply with a gentle correction line in this EXACT format (this is the ONLY line allowed to contain ${native}):
+   ✏️ <corrected version in ${target}> — <very short explanation in ${native}>
+   If there is NO mistake, do NOT include the ✏️ line at all.
+2. Write the rest of your reply ENTIRELY in ${target}. Keep it short: 2–4 lines. Do NOT translate to ${native}. Do NOT repeat the same content in another language. Do NOT add flags or language prefixes.
+3. ALWAYS end with a single follow-up question in ${target} (only) to keep the conversation going.
+4. Use simple beginner vocabulary. Occasionally address the student by name (${userName}).
+5. At the very END of your message, append a hidden score tag on its own line, EXACTLY like:
+   <score>{"correct": true}</score>
+   Use "correct": false ONLY when you actually had to correct the student.
+Never break these rules. Never wrap the whole response in code blocks. The student can request a translation to ${native} via a separate "Translate" button — never preempt it.`;
+}
+
+export default async (request) => {
+  if (request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) {
+    return new Response(
+      JSON.stringify({ error: "Missing LOVABLE_API_KEY on Netlify environment variables" }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  let messages = [];
+  if (body.mode === "translate" && body.textToTranslate) {
+    const target = body.learningLang === "en" ? "Português (Brazilian)" : "English";
+    messages = [
+      {
+        role: "system",
+        content: `You are a translator. Translate the user's message to ${target}. Reply ONLY with the translation, no quotes, no extra commentary.`,
+      },
+      { role: "user", content: body.textToTranslate },
+    ];
+  } else {
+    const userName = body.userName || "amigo";
+    const learningLang = body.learningLang || "en";
+    messages = [
+      { role: "system", content: buildSystemPrompt(userName, learningLang) },
+      ...(body.messages || []),
+    ];
+  }
+
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${key}`,
+    },
+    body: JSON.stringify({ model: "google/gemini-2.5-flash", messages }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    if (res.status === 429)
+      return new Response(JSON.stringify({ error: "rate_limit" }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      });
+    if (res.status === 402)
+      return new Response(JSON.stringify({ error: "credits" }), {
+        status: 402,
+        headers: { "Content-Type": "application/json" },
+      });
+    return new Response(JSON.stringify({ error: text }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const data = await res.json();
+  const content = data.choices?.[0]?.message?.content ?? "";
+  return new Response(JSON.stringify({ content }), {
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+export const config = { path: "/api/chat" };
