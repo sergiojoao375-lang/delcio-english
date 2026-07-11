@@ -1,6 +1,15 @@
 [build]
   command = "npm install -g bun && bun run build"
   publish = ".output/public"
+  functions = "netlify/functions"
 
 [build.environment]
   CI = "false"
+
+# SPA fallback: any unmatched route serves index.html so TanStack Router
+# handles client-side routing. Netlify Functions declared via `export const
+# config = { path: "/api/..." }` are matched before this catch-all.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
