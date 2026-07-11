@@ -1,6 +1,6 @@
 [build]
   command = "npm install -g bun && bun run build"
-  publish = ".output/public"
+  publish = "dist"
   functions = "netlify/functions"
 
 [build.environment]
