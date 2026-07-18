@@ -55,11 +55,21 @@ export const Route = createFileRoute("/api/tts")({
           }
         );
 
+        const reqId = request.headers.get("X-Client-Request-Id") || "";
         if (!resp.ok) {
           const err = await resp.text();
+          console.error(
+            JSON.stringify({ scope: "tts", requestId: reqId, upstreamStatus: resp.status, message: err.slice(0, 300) })
+          );
+          if (resp.status === 401 || resp.status === 403) {
+            return new Response(
+              JSON.stringify({ error: "key_rotated", retryable: true, message: "TTS auth failed — key may be rotating." }),
+              { status: 503, headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId } }
+            );
+          }
           return new Response(JSON.stringify({ error: err || "TTS failed" }), {
             status: resp.status,
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId },
           });
         }
 
@@ -69,6 +79,7 @@ export const Route = createFileRoute("/api/tts")({
           headers: {
             "Content-Type": "audio/mpeg",
             "Cache-Control": "no-store",
+            "X-Backend-Request-Id": reqId,
           },
         });
       },
