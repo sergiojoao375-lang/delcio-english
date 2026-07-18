@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper, Star, Crown, Play, Volume2 } from "lucide-react";
 import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
 import { SpeakingAvatar } from "@/components/speaking-avatar";
+import { fetchWithRetry } from "@/lib/api-client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -205,7 +206,7 @@ function Index() {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
-      const res = await fetch("/api/tts", {
+      const res = await fetchWithRetry("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId }),
@@ -254,7 +255,7 @@ function Index() {
         ? "Hello! I'm your English teacher. Let's practice together!"
         : "Olá! Sou seu professor. Vamos praticar juntos!";
     try {
-      const res = await fetch("/api/tts", {
+      const res = await fetchWithRetry("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: sample, voiceId: id }),
@@ -364,15 +365,25 @@ function Index() {
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       throw new Error("Sem ligação à internet.");
     }
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetchWithRetry(
+      "/api/chat",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+      {
+        onRetry: ({ reason }) => {
+          if (reason === "key_rotated") console.info("[chat] a reconectar ao servidor…");
+        },
+      },
+    );
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
       if (res.status === 429) throw new Error("Muitas requisições — aguarde um momento.");
       if (res.status === 402) throw new Error("Créditos de IA esgotados. Adicione créditos.");
+      if (data?.error === "key_rotated")
+        throw new Error("Servidor a atualizar credenciais. Tente novamente em instantes.");
       throw new Error(data?.error || "Erro ao falar com o Delcio.");
     }
     return (await res.json()) as { content: string };
