@@ -70,31 +70,30 @@ export const Route = createFileRoute("/api/chat")({
           }),
         });
 
+        const reqId = request.headers.get("X-Client-Request-Id") || "";
+        const respHeaders = { "Content-Type": "application/json", "X-Backend-Request-Id": reqId };
         if (!res.ok) {
           const text = await res.text();
+          console.error(
+            JSON.stringify({ scope: "chat", requestId: reqId, upstreamStatus: res.status, message: text.slice(0, 300) })
+          );
           if (res.status === 429)
-            return new Response(JSON.stringify({ error: "rate_limit" }), {
-              status: 429,
-              headers: { "Content-Type": "application/json" },
-            });
+            return new Response(JSON.stringify({ error: "rate_limit" }), { status: 429, headers: respHeaders });
           if (res.status === 402)
-            return new Response(JSON.stringify({ error: "credits" }), {
-              status: 402,
-              headers: { "Content-Type": "application/json" },
-            });
-          return new Response(JSON.stringify({ error: text }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+            return new Response(JSON.stringify({ error: "credits" }), { status: 402, headers: respHeaders });
+          if (res.status === 401 || res.status === 403)
+            return new Response(
+              JSON.stringify({ error: "key_rotated", retryable: true, message: "Auth to AI gateway failed — key may be rotating." }),
+              { status: 503, headers: respHeaders }
+            );
+          return new Response(JSON.stringify({ error: text }), { status: 500, headers: respHeaders });
         }
 
         const data = (await res.json()) as {
           choices?: Array<{ message?: { content?: string } }>;
         };
         const content = data.choices?.[0]?.message?.content ?? "";
-        return new Response(JSON.stringify({ content }), {
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ content }), { headers: respHeaders });
       },
     },
   },
