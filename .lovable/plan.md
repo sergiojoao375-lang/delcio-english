@@ -1,39 +1,52 @@
-## Objetivo
+# Corrigir "Sem ligação" e a página Sobre
 
-Tornar as chamadas ao backend (`/api/chat`, `/api/tts`) resilientes durante a janela de rotação da `LOVABLE_API_KEY` (~1h de coexistência), com retries automáticos e log estruturado de falhas para debug.
+## 1. Aviso "Sem ligação" sempre visível
 
-## Mudanças
+Hoje existem dois indicadores de rede independentes:
+- o distintivo vermelho fixo no topo (`OfflineIndicator`);
+- o distintivo verde "● Online" dentro do cabeçalho do chat.
 
-### 1. Novo helper cliente `src/lib/api-client.ts`
-Wrapper único `fetchWithRetry(url, init, opts)` usado por todas as chamadas de frontend:
-- Até **3 tentativas** com backoff exponencial (400ms → 900ms → 2000ms + jitter).
-- Retry apenas em: erros de rede, `408`, `429`, `500`, `502`, `503`, `504` e no novo código `401/403` com corpo `{ error: "unauthorized" | "key_rotated" }`.
-- Não faz retry em `402` (créditos) nem em `400` (request inválido).
-- Cada tentativa recebe um `requestId` (uuid curto) enviado no header `X-Client-Request-Id` para correlação.
-- Em qualquer falha final, chama `logClientError({ requestId, url, attempts, status, message, ts })`:
-  - Guarda os últimos 20 erros em `localStorage` (`delcio:error-log`).
-  - `console.error` estruturado no modo dev.
+Ambos leem `navigator.onLine`, mas em estados diferentes, por isso aparecem os
+dois ao mesmo tempo (vermelho + verde), como na captura.
 
-### 2. Sinalização de "chave rotacionada" no servidor
-Em `netlify/functions/chat.mjs`, `netlify/functions/tts.mjs` e `src/routes/api/chat.ts`, `src/routes/api/tts.ts`:
-- Quando o upstream retorna `401`/`403`, responder com JSON `{ error: "key_rotated", retryable: true }` e status `503` (para o cliente entender que deve fazer retry com backoff maior, evitando loop imediato).
-- Adicionar header `X-Backend-Request-Id` refletindo o `X-Client-Request-Id` recebido.
-- Log server-side com `console.error(JSON.stringify({ scope, requestId, upstreamStatus, message }))` para aparecer nos logs do Netlify / server functions.
+Correções:
+- Passar a existir **uma única fonte de verdade** de estado de rede: o hook
+  `use-online-status` é usado tanto pelo indicador fixo como pelo cabeçalho, e o
+  estado local duplicado dentro da página do chat é removido.
+- Tornar a deteção mais fiável: assumir "online" por omissão e só marcar offline
+  depois de o evento `offline` do browser disparar **e** um pequeno pedido de
+  verificação falhar; ao voltar `online`, limpar imediatamente o aviso. Isto
+  evita o falso "sem ligação" causado por `navigator.onLine` incorreto em alguns
+  browsers/preview.
+- O distintivo vermelho passa a mostrar-se apenas quando realmente não há
+  ligação, e nunca em simultâneo com o "● Online".
 
-### 3. Integrar no `src/routes/index.tsx`
-Trocar os `fetch("/api/chat", ...)` e `fetch("/api/tts", ...)` pelo novo `fetchWithRetry`. Manter os erros de UX existentes ("Erro ao falar com o Delcio"), mas adicionar sub-mensagem quando `error === "key_rotated"`: *"A conectar novamente ao servidor…"* durante os retries.
+## 2. Página "Sobre" com texto errado
 
-### 4. Página oculta de debug `src/routes/debug.tsx`
-Rota simples (não linkada) que lê `localStorage["delcio:error-log"]` e mostra tabela com timestamp, url, status, tentativas e requestId, com botão "Limpar". Útil para o utilizador enviar screenshot em caso de falha persistente.
+A página descreve "cálculo luminotécnico e dimensionamento de sistemas de
+iluminação" — nada a ver com o Delcio-English.
 
-## Detalhes técnicos
+Reescrever o conteúdo para o produto real, mantendo o layout, o logótipo
+SérgioTech, o cabeçalho/rodapé fixos e os contactos:
+- Título e metadados: "Sobre — Delcio-English".
+- Descrição: assistente de conversação com IA para aprender inglês e português,
+  com correções instantâneas, modo de voz com vozes realistas, níveis e
+  progresso, e funcionamento offline (PWA).
+- Pequena lista das funcionalidades principais.
+- Crédito: desenvolvido por Sérgio João / SérgioTech, especialista em
+  Electricidade e Telecomunicações.
 
-- Sem novas dependências.
-- `fetchWithRetry` aborta com `AbortController` respeitando um `timeout` opcional (default 30s por tentativa) para não pendurar o UI.
-- O código de status `503 + key_rotated` foi escolhido porque muitos proxies/CDN já entendem `503` como transitório; o corpo JSON deixa claro o motivo.
-- Nenhuma alteração no fluxo de rotação em si (continua manual via painel do Lovable → Netlify).
+## 3. Revisão final do software
 
-## Fora de escopo
+- Verificar o app com o navegador de testes (ecrã inicial, chat, modo voz,
+  Sobre) e corrigir erros de consola/runtime que apareçam.
+- Confirmar que os metadados de cada página são únicos e coerentes com
+  Delcio-English.
 
-- Envio automático dos logs para um backend remoto (fica em `localStorage`).
-- Rotação automática da chave.
+## Notas técnicas
+
+- Ficheiros: `src/hooks/use-online-status.ts`, `src/components/offline-indicator.tsx`,
+  `src/routes/index.tsx` (remover estado `online` duplicado, linhas ~93-101 e
+  ~620-626), `src/routes/about.tsx`.
+- Verificação de rede: `fetch('/manifest.json', { method: 'HEAD', cache: 'no-store' })`
+  com timeout curto, apenas quando o browser reporta offline.
