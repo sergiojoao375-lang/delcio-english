@@ -4,6 +4,8 @@ import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper,
 import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
 import { SpeakingAvatar } from "@/components/speaking-avatar";
 import { fetchWithRetry } from "@/lib/api-client";
+import { useOnlineStatus } from "@/hooks/use-online-status";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
