@@ -195,7 +195,7 @@ function AboutPage() {
       {/* Rodapé fixo */}
       <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-border">
         <div className="mx-auto max-w-4xl px-4 py-3 text-center text-xs text-muted-foreground">
-          © 2026 SérgioTech — Todos os direitos reservados
+          © 2026 Delcio-English — por SérgioTech. Todos os direitos reservados.
         </div>
       </footer>
     </div>
