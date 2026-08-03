@@ -4,6 +4,8 @@ import { Mic, Send, Languages, RefreshCcw, Flame, Trophy, Sparkles, PartyPopper,
 import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
 import { SpeakingAvatar } from "@/components/speaking-avatar";
 import { fetchWithRetry } from "@/lib/api-client";
+import { useOnlineStatus } from "@/hooks/use-online-status";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -90,18 +92,8 @@ function Index() {
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [turns, setTurns] = useState(0); // for progress
-  const [online, setOnline] = useState(typeof navigator === "undefined" ? true : navigator.onLine);
+  const online = useOnlineStatus();
 
-  useEffect(() => {
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
-  }, []);
 
 
   const [celebration, setCelebration] = useState<{

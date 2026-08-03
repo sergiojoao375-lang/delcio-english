@@ -1,26 +1,54 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Mail, MessageCircle, ArrowLeft, Zap } from "lucide-react";
+import { Mail, MessageCircle, ArrowLeft, Zap, Sparkles, Mic, Trophy, WifiOff } from "lucide-react";
 import logoAsset from "@/assets/sergiotech-logo.png.asset.json";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "Sobre — SérgioTech" },
+      { title: "Sobre — Delcio-English" },
       {
         name: "description",
         content:
-          "Sobre o SérgioTech: aplicação para cálculo luminotécnico e dimensionamento de sistemas de iluminação, por Sérgio João.",
+          "Delcio-English: assistente de conversação com IA para aprender inglês e português, com correções instantâneas, modo de voz e progresso por níveis.",
       },
-      { property: "og:title", content: "Sobre — SérgioTech" },
+      { property: "og:title", content: "Sobre — Delcio-English" },
       {
         property: "og:description",
         content:
-          "Aplicação desenvolvida por Sérgio João, especialista em Electricidade e Telecomunicações.",
+          "Aprende inglês e português a conversar com o Delcio. Desenvolvido por Sérgio João (SérgioTech).",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://delcio-english.lovable.app/about" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://delcio-english.lovable.app/about" }],
   }),
   component: AboutPage,
 });
+
+const FEATURES = [
+  {
+    icon: Sparkles,
+    title: "Correções instantâneas",
+    text: "O Delcio corrige a tua gramática e vocabulário a cada mensagem, com uma explicação curta na tua língua.",
+  },
+  {
+    icon: Mic,
+    title: "Modo de voz",
+    text: "Fala e ouve respostas com vozes realistas — escolhe o professor com quem queres conversar.",
+  },
+  {
+    icon: Trophy,
+    title: "Níveis e progresso",
+    text: "Ganha pontos, mantém a tua sequência e sobe de Iniciante até Avançado.",
+  },
+  {
+    icon: WifiOff,
+    title: "Funciona instalado",
+    text: "Instala no telemóvel como aplicação e abre-a mesmo com ligação instável.",
+  },
+];
+
 
 const WHATSAPP_URL = "https://wa.me/244931728474";
 const EMAIL_URL = "mailto:sergiojoao931@gmail.com";
@@ -54,28 +82,62 @@ function AboutPage() {
       {/* Conteúdo central */}
       <main className="mx-auto max-w-3xl px-4 pt-24 pb-28">
         <section className="bubble-in flex flex-col items-center text-center">
-          <img
-            src={logoAsset.url}
-            alt="SérgioTech logo"
-            className="w-56 sm:w-64 object-contain drop-shadow-sm"
-          />
-
-          <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight">
-            Sérgio João
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            Delcio-English
           </h1>
           <p className="mt-2 text-primary font-medium text-base sm:text-lg inline-flex items-center gap-1.5">
-            <Zap className="h-4 w-4" />
-            Especialista em Electricidade e Telecomunicações
+            <Sparkles className="h-4 w-4" />
+            Aprende inglês e português a conversar
           </p>
         </section>
 
         <section className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
           <p className="text-card-foreground leading-relaxed text-center sm:text-left">
-            Aplicação desenvolvida para cálculo luminotécnico e dimensionamento
-            de sistemas de iluminação, permitindo obter resultados rápidos,
-            precisos e profissionais para projetos elétricos.
+            O Delcio-English é um assistente de conversação com inteligência
+            artificial que te ajuda a aprender inglês (ou português) a falar de
+            verdade. Escreves ou falas, o Delcio responde na língua que estás a
+            aprender, corrige os teus erros com uma explicação simples e mantém
+            sempre a conversa a andar com uma nova pergunta.
           </p>
         </section>
+
+        {/* Funcionalidades */}
+        <section className="mt-8 grid gap-4 sm:grid-cols-2">
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="font-semibold text-foreground">{f.title}</div>
+                <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                  {f.text}
+                </p>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Autor */}
+        <section className="mt-10 flex flex-col items-center text-center">
+          <img
+            src={logoAsset.url}
+            alt="Logótipo SérgioTech"
+            className="w-44 sm:w-52 object-contain drop-shadow-sm"
+          />
+          <h2 className="mt-3 text-xl font-bold tracking-tight">Sérgio João</h2>
+          <p className="mt-1 text-primary font-medium text-sm inline-flex items-center gap-1.5">
+            <Zap className="h-4 w-4" />
+            Especialista em Electricidade e Telecomunicações
+          </p>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Desenvolvimento e manutenção da aplicação por SérgioTech.
+          </p>
+        </section>
+
 
         {/* Contactos */}
         <section className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -133,7 +195,7 @@ function AboutPage() {
       {/* Rodapé fixo */}
       <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-border">
         <div className="mx-auto max-w-4xl px-4 py-3 text-center text-xs text-muted-foreground">
-          © 2026 SérgioTech — Todos os direitos reservados
+          © 2026 Delcio-English — por SérgioTech. Todos os direitos reservados.
         </div>
       </footer>
     </div>
