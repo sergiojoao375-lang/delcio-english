@@ -1,17 +1,63 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { isValidVoiceId, DEFAULT_VOICE_ID } from "@/lib/voices";
+import { isValidVoiceId, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
+
+// Mapeia as vozes ElevenLabs para vozes equivalentes do fallback (Lovable AI)
+const FALLBACK_VOICE: Record<string, string> = {
+  EXAVITQu4vr4xnSDxMaL: "shimmer",
+  FGY2WhTYpPnrIDTdsKH5: "nova",
+  pFZP5JQG7iQjIQuC4Bku: "coral",
+  XrExE9yKIg1WjnnlVkGX: "sage",
+  cgSgspJ2msm6clMCkdW9: "alloy",
+  IKne3meq5aSn9XLyUdCD: "echo",
+  JBFqnCBsd6RMkjVDRZzb: "onyx",
+  TX3LPaxmHKxFdv7VOQHJ: "fable",
+  nPczCjzI2devNBz1zQrb: "ash",
+};
+
+async function lovableTts(text: string, voiceId: string, reqId: string): Promise<Response> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) {
+    return new Response(JSON.stringify({ error: "Serviço de voz indisponível." }), {
+      status: 502,
+      headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId },
+    });
+  }
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai/gpt-4o-mini-tts",
+      input: text,
+      voice: FALLBACK_VOICE[voiceId] ?? "alloy",
+      response_format: "mp3",
+      instructions: `Speak as ${getVoice(voiceId).name}: warm, friendly and clear, like a language teacher.`,
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    console.error(JSON.stringify({ scope: "tts-fallback", requestId: reqId, upstreamStatus: resp.status, message: err.slice(0, 300) }));
+    return new Response(JSON.stringify({ error: "Serviço de voz indisponível no momento." }), {
+      status: 502,
+      headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId },
+    });
+  }
+  return new Response(await resp.arrayBuffer(), {
+    status: 200,
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Cache-Control": "no-store",
+      "X-Backend-Request-Id": reqId,
+      "X-TTS-Provider": "lovable",
+    },
+  });
+}
 
 export const Route = createFileRoute("/api/tts")({
   server: {
     handlers: {
       POST: async ({ request }) => {
         const apiKey = process.env.ELEVENLABS_API_KEY;
-        if (!apiKey) {
-          return new Response(JSON.stringify({ error: "ELEVENLABS_API_KEY not configured" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
+
 
         let body: { text?: string; voiceId?: string };
         try {
