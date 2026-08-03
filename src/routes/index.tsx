@@ -529,12 +529,12 @@ function Index() {
   if (stage === "welcome") {
     return (
       <main className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-background via-secondary to-accent">
-        <div className="w-full max-w-md bg-card text-card-foreground rounded-2xl shadow-xl p-8 border border-border bubble-in">
+        <div className="w-full max-w-md bg-card text-card-foreground rounded-2xl shadow-xl p-6 sm:p-8 border border-border bubble-in">
           <div className="flex justify-center gap-2 mb-3">
             <span className="px-3 py-1 rounded-md bg-primary/10 text-primary-dark font-bold text-sm tracking-wide border border-primary/30">POR</span>
             <span className="px-3 py-1 rounded-md bg-primary/10 text-primary-dark font-bold text-sm tracking-wide border border-primary/30">ENG</span>
           </div>
-          <h1 className="text-3xl font-bold text-center text-primary-dark">
+          <h1 className="text-2xl sm:text-3xl font-bold text-center text-primary-dark">
             Delcio-English <span className="text-primary">🌍</span>
             <span className="block text-base font-medium text-muted-foreground mt-1">
               Aprenda inglês conversando com IA
@@ -968,7 +968,7 @@ function Index() {
           </div>
 
           {showVoicePicker && (
-            <div className="absolute top-16 left-4 z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 w-[280px] max-h-[70vh] overflow-y-auto shadow-2xl">
+            <div className="absolute top-16 left-3 right-3 sm:right-auto z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 sm:w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
               <p className="text-xs text-white/60 mb-2 px-1">Escolha a voz do seu professor</p>
               <div className="flex flex-col gap-1">
                 {VOICES.map((v) => {
@@ -1068,12 +1068,12 @@ function Index() {
 
 
           {/* Botão microfone */}
-          <div className="pb-12 pt-4 flex flex-col items-center gap-3">
+          <div className="pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-12 sm:pt-4 flex flex-col items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={toggleMic}
               disabled={loading}
               aria-label={recording ? "Parar gravação" : "Falar"}
-              className={`w-20 h-20 rounded-full flex items-center justify-center transition shadow-2xl ${
+              className={`w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition shadow-2xl ${
                 recording
                   ? "bg-destructive text-destructive-foreground mic-recording"
                   : "bg-primary text-primary-foreground hover:brightness-110 active:scale-95 disabled:opacity-50"
