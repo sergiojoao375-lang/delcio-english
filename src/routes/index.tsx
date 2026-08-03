@@ -616,7 +616,7 @@ function Index() {
               title={online ? "Conectado" : "Sem internet — a IA não responde offline"}
             >
               {online ? "●" : "●"}
-              <span className="hidden xs:inline"> {online ? "Online" : "Offline"}</span>
+              <span className="hidden sm:inline"> {online ? "Online" : "Offline"}</span>
             </span>
             <span className="max-w-[7ch] sm:max-w-none truncate bg-white/10 rounded-full px-2 sm:px-3 py-1">
               👤 {name}
