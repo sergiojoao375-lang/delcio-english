@@ -821,7 +821,7 @@ function Index() {
             >
               Modo Voz 🎙️
             </button>
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
             <div className="relative">
               <button
                 onClick={() => setShowVoicePicker((v) => !v)}
@@ -839,7 +839,7 @@ function Index() {
                 <span>{getVoice(voiceId).name}</span>
               </button>
               {showVoicePicker && mode === "text" && (
-                <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
+                <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[min(280px,calc(100vw-1.5rem))] max-h-[55vh] overflow-y-auto shadow-2xl">
                   <p className="text-xs text-muted-foreground mb-2 px-1">Escolha a voz do seu professor</p>
                   <div className="flex flex-col gap-1">
                     {VOICES.map((v) => {
