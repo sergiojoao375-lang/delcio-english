@@ -95,6 +95,8 @@ function Index() {
   const [streak, setStreak] = useState(0);
   const [turns, setTurns] = useState(0); // for progress
   const online = useOnlineStatus();
+  const isMobile = useIsMobile();
+
 
 
 
