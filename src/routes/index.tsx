@@ -797,9 +797,10 @@ function Index() {
       </div>
 
       {/* Composer */}
-      <div className="border-t border-border bg-card">
-        <div className="max-w-3xl mx-auto px-3 py-3">
-          <div className="flex items-center gap-2 mb-2 text-xs">
+      <div className="border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-3xl mx-auto px-3 py-2.5 sm:py-3">
+          <div className="flex items-center gap-2 mb-2 text-xs overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0 sm:overflow-visible">
+
             <button
               onClick={() => setMode("text")}
               className={`rounded-full px-3 py-1 border ${
