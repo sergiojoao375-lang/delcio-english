@@ -600,39 +600,43 @@ function Index() {
   return (
     <main className="h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <header className="bg-primary-dark text-primary-foreground px-4 py-3 shadow-md">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold">Delcio-English</span>
-            <span className="text-xl">🌍</span>
+      <header className="bg-primary-dark text-primary-foreground px-3 sm:px-4 py-2.5 sm:py-3 shadow-md pt-[max(0.625rem,env(safe-area-inset-top))]">
+        <div className="max-w-3xl mx-auto grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-base sm:text-xl font-bold">Delcio-English</span>
+            <span className="shrink-0 text-base sm:text-xl">🌍</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
             <span
-              className={`rounded-full px-2 py-1 text-[11px] font-medium border ${
+              className={`shrink-0 rounded-full px-2 py-1 text-[10px] sm:text-[11px] font-medium border ${
                 online
                   ? "bg-emerald-500/15 border-emerald-300/30 text-emerald-100"
                   : "bg-amber-500/20 border-amber-300/40 text-amber-100"
               }`}
               title={online ? "Conectado" : "Sem internet — a IA não responde offline"}
             >
-              {online ? "● Online" : "● Offline"}
+              {online ? "●" : "●"}
+              <span className="hidden xs:inline"> {online ? "Online" : "Offline"}</span>
             </span>
-            <span className="bg-white/10 rounded-full px-3 py-1">👤 {name}</span>
-            <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
+            <span className="max-w-[7ch] sm:max-w-none truncate bg-white/10 rounded-full px-2 sm:px-3 py-1">
+              👤 {name}
+            </span>
+            <span className="shrink-0 bg-white/10 rounded-full px-2 sm:px-3 py-1 flex items-center gap-1">
               <Trophy className="w-3.5 h-3.5" /> {score}
             </span>
-            <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
+            <span className="shrink-0 bg-white/10 rounded-full px-2 sm:px-3 py-1 flex items-center gap-1">
               <Flame className="w-3.5 h-3.5" /> {streak}
             </span>
             <Link
               to="/about"
-              className="bg-white/10 hover:bg-white/20 transition rounded-full px-3 py-1 text-[12px] font-medium"
+              className="shrink-0 bg-white/10 hover:bg-white/20 transition rounded-full px-2 sm:px-3 py-1 text-[11px] sm:text-[12px] font-medium"
             >
               Sobre
             </Link>
           </div>
 
         </div>
+
         <div className="max-w-3xl mx-auto mt-3 bg-white/5 rounded-xl px-3 py-2.5 border border-white/10">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-sm font-medium">
