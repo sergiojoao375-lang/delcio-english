@@ -5,6 +5,8 @@ import { VOICES, DEFAULT_VOICE_ID, getVoice } from "@/lib/voices";
 import { SpeakingAvatar } from "@/components/speaking-avatar";
 import { fetchWithRetry } from "@/lib/api-client";
 import { useOnlineStatus } from "@/hooks/use-online-status";
+import { useIsMobile } from "@/hooks/use-mobile";
+
 
 
 export const Route = createFileRoute("/")({
@@ -93,6 +95,8 @@ function Index() {
   const [streak, setStreak] = useState(0);
   const [turns, setTurns] = useState(0); // for progress
   const online = useOnlineStatus();
+  const isMobile = useIsMobile();
+
 
 
 
@@ -525,12 +529,12 @@ function Index() {
   if (stage === "welcome") {
     return (
       <main className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-background via-secondary to-accent">
-        <div className="w-full max-w-md bg-card text-card-foreground rounded-2xl shadow-xl p-8 border border-border bubble-in">
+        <div className="w-full max-w-md bg-card text-card-foreground rounded-2xl shadow-xl p-6 sm:p-8 border border-border bubble-in">
           <div className="flex justify-center gap-2 mb-3">
             <span className="px-3 py-1 rounded-md bg-primary/10 text-primary-dark font-bold text-sm tracking-wide border border-primary/30">POR</span>
             <span className="px-3 py-1 rounded-md bg-primary/10 text-primary-dark font-bold text-sm tracking-wide border border-primary/30">ENG</span>
           </div>
-          <h1 className="text-3xl font-bold text-center text-primary-dark">
+          <h1 className="text-2xl sm:text-3xl font-bold text-center text-primary-dark">
             Delcio-English <span className="text-primary">🌍</span>
             <span className="block text-base font-medium text-muted-foreground mt-1">
               Aprenda inglês conversando com IA
@@ -600,39 +604,43 @@ function Index() {
   return (
     <main className="h-[100dvh] flex flex-col bg-background overflow-hidden">
       {/* Header */}
-      <header className="bg-primary-dark text-primary-foreground px-4 py-3 shadow-md">
-        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold">Delcio-English</span>
-            <span className="text-xl">🌍</span>
+      <header className="bg-primary-dark text-primary-foreground px-3 sm:px-4 py-2.5 sm:py-3 shadow-md pt-[max(0.625rem,env(safe-area-inset-top))]">
+        <div className="max-w-3xl mx-auto grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:justify-between sm:gap-3">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-base sm:text-xl font-bold">Delcio-English</span>
+            <span className="shrink-0 text-base sm:text-xl">🌍</span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
             <span
-              className={`rounded-full px-2 py-1 text-[11px] font-medium border ${
+              className={`shrink-0 rounded-full px-2 py-1 text-[10px] sm:text-[11px] font-medium border ${
                 online
                   ? "bg-emerald-500/15 border-emerald-300/30 text-emerald-100"
                   : "bg-amber-500/20 border-amber-300/40 text-amber-100"
               }`}
               title={online ? "Conectado" : "Sem internet — a IA não responde offline"}
             >
-              {online ? "● Online" : "● Offline"}
+              {online ? "●" : "●"}
+              <span className="hidden sm:inline"> {online ? "Online" : "Offline"}</span>
             </span>
-            <span className="bg-white/10 rounded-full px-3 py-1">👤 {name}</span>
-            <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
+            <span className="max-w-[7ch] sm:max-w-none truncate bg-white/10 rounded-full px-2 sm:px-3 py-1">
+              👤 {name}
+            </span>
+            <span className="shrink-0 bg-white/10 rounded-full px-2 sm:px-3 py-1 flex items-center gap-1">
               <Trophy className="w-3.5 h-3.5" /> {score}
             </span>
-            <span className="bg-white/10 rounded-full px-3 py-1 flex items-center gap-1">
+            <span className="shrink-0 bg-white/10 rounded-full px-2 sm:px-3 py-1 flex items-center gap-1">
               <Flame className="w-3.5 h-3.5" /> {streak}
             </span>
             <Link
               to="/about"
-              className="bg-white/10 hover:bg-white/20 transition rounded-full px-3 py-1 text-[12px] font-medium"
+              className="shrink-0 bg-white/10 hover:bg-white/20 transition rounded-full px-2 sm:px-3 py-1 text-[11px] sm:text-[12px] font-medium"
             >
               Sobre
             </Link>
           </div>
 
         </div>
+
         <div className="max-w-3xl mx-auto mt-3 bg-white/5 rounded-xl px-3 py-2.5 border border-white/10">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-sm font-medium">
@@ -793,9 +801,10 @@ function Index() {
       </div>
 
       {/* Composer */}
-      <div className="border-t border-border bg-card">
-        <div className="max-w-3xl mx-auto px-3 py-3">
-          <div className="flex items-center gap-2 mb-2 text-xs">
+      <div className="border-t border-border bg-card pb-[env(safe-area-inset-bottom)]">
+        <div className="max-w-3xl mx-auto px-3 py-2.5 sm:py-3">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 text-xs">
+
             <button
               onClick={() => setMode("text")}
               className={`rounded-full px-3 py-1 border ${
@@ -816,7 +825,7 @@ function Index() {
             >
               Modo Voz 🎙️
             </button>
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
             <div className="relative">
               <button
                 onClick={() => setShowVoicePicker((v) => !v)}
@@ -834,7 +843,7 @@ function Index() {
                 <span>{getVoice(voiceId).name}</span>
               </button>
               {showVoicePicker && mode === "text" && (
-                <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
+                <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[min(280px,calc(100vw-1.5rem))] max-h-[55vh] overflow-y-auto shadow-2xl">
                   <p className="text-xs text-muted-foreground mb-2 px-1">Escolha a voz do seu professor</p>
                   <div className="flex flex-col gap-1">
                     {VOICES.map((v) => {
@@ -959,7 +968,7 @@ function Index() {
           </div>
 
           {showVoicePicker && (
-            <div className="absolute top-16 left-4 z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 w-[280px] max-h-[70vh] overflow-y-auto shadow-2xl">
+            <div className="absolute top-16 left-3 right-3 sm:right-auto z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 sm:w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
               <p className="text-xs text-white/60 mb-2 px-1">Escolha a voz do seu professor</p>
               <div className="flex flex-col gap-1">
                 {VOICES.map((v) => {
@@ -1015,8 +1024,9 @@ function Index() {
 
 
 
-          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
-            <div className="text-center text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
+          <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 sm:px-6 gap-5 sm:gap-8 pt-16 sm:pt-20">
+
+            <div className="text-center text-xs sm:text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
               {loading
                 ? "A pensar…"
                 : speaking
@@ -1032,11 +1042,13 @@ function Index() {
               name={getVoice(voiceId).name}
               audio={currentAudio}
               speaking={speaking}
-              size={280}
+              size={isMobile ? 200 : 280}
             />
 
             {/* Waveform reativa */}
             <Waveform level={voiceLevel} active={recording || speaking || loading} />
+
+
 
             {/* Última troca */}
             <div className="w-full max-w-md text-center space-y-2 min-h-[60px]">
@@ -1056,12 +1068,12 @@ function Index() {
 
 
           {/* Botão microfone */}
-          <div className="pb-12 pt-4 flex flex-col items-center gap-3">
+          <div className="pt-3 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:pb-12 sm:pt-4 flex flex-col items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={toggleMic}
               disabled={loading}
               aria-label={recording ? "Parar gravação" : "Falar"}
-              className={`w-20 h-20 rounded-full flex items-center justify-center transition shadow-2xl ${
+              className={`w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition shadow-2xl ${
                 recording
                   ? "bg-destructive text-destructive-foreground mic-recording"
                   : "bg-primary text-primary-foreground hover:brightness-110 active:scale-95 disabled:opacity-50"

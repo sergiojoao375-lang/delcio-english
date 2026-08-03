@@ -57,9 +57,9 @@ function AboutPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header fixo */}
-      <header className="fixed top-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-b border-border">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+      <header className="fixed top-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-b border-border pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2">
             <img
               src={logoAsset.url}
               alt="SérgioTech"
@@ -154,7 +154,7 @@ function AboutPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">
                 WhatsApp
               </div>
-              <div className="font-semibold text-foreground truncate">
+              <div className="font-semibold text-foreground truncate text-sm sm:text-base">
                 +244 931 728 474
               </div>
             </div>
@@ -171,7 +171,7 @@ function AboutPage() {
               <div className="text-xs uppercase tracking-wide text-muted-foreground">
                 Email
               </div>
-              <div className="font-semibold text-foreground truncate">
+              <div className="font-semibold text-foreground truncate text-sm sm:text-base">
                 sergiojoao931@gmail.com
               </div>
             </div>
@@ -193,7 +193,7 @@ function AboutPage() {
       </main>
 
       {/* Rodapé fixo */}
-      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-border">
+      <footer className="fixed bottom-0 inset-x-0 z-40 bg-white/90 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-4xl px-4 py-3 text-center text-xs text-muted-foreground">
           © 2026 Delcio-English — por SérgioTech. Todos os direitos reservados.
         </div>
