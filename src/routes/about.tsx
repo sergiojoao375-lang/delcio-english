@@ -82,28 +82,62 @@ function AboutPage() {
       {/* Conteúdo central */}
       <main className="mx-auto max-w-3xl px-4 pt-24 pb-28">
         <section className="bubble-in flex flex-col items-center text-center">
-          <img
-            src={logoAsset.url}
-            alt="SérgioTech logo"
-            className="w-56 sm:w-64 object-contain drop-shadow-sm"
-          />
-
-          <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight">
-            Sérgio João
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
+            Delcio-English
           </h1>
           <p className="mt-2 text-primary font-medium text-base sm:text-lg inline-flex items-center gap-1.5">
-            <Zap className="h-4 w-4" />
-            Especialista em Electricidade e Telecomunicações
+            <Sparkles className="h-4 w-4" />
+            Aprende inglês e português a conversar
           </p>
         </section>
 
         <section className="mt-8 rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
           <p className="text-card-foreground leading-relaxed text-center sm:text-left">
-            Aplicação desenvolvida para cálculo luminotécnico e dimensionamento
-            de sistemas de iluminação, permitindo obter resultados rápidos,
-            precisos e profissionais para projetos elétricos.
+            O Delcio-English é um assistente de conversação com inteligência
+            artificial que te ajuda a aprender inglês (ou português) a falar de
+            verdade. Escreves ou falas, o Delcio responde na língua que estás a
+            aprender, corrige os teus erros com uma explicação simples e mantém
+            sempre a conversa a andar com uma nova pergunta.
           </p>
         </section>
+
+        {/* Funcionalidades */}
+        <section className="mt-8 grid gap-4 sm:grid-cols-2">
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 text-left">
+                <div className="font-semibold text-foreground">{f.title}</div>
+                <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                  {f.text}
+                </p>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        {/* Autor */}
+        <section className="mt-10 flex flex-col items-center text-center">
+          <img
+            src={logoAsset.url}
+            alt="Logótipo SérgioTech"
+            className="w-44 sm:w-52 object-contain drop-shadow-sm"
+          />
+          <h2 className="mt-3 text-xl font-bold tracking-tight">Sérgio João</h2>
+          <p className="mt-1 text-primary font-medium text-sm inline-flex items-center gap-1.5">
+            <Zap className="h-4 w-4" />
+            Especialista em Electricidade e Telecomunicações
+          </p>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Desenvolvimento e manutenção da aplicação por SérgioTech.
+          </p>
+        </section>
+
 
         {/* Contactos */}
         <section className="mt-8 grid gap-4 sm:grid-cols-2">
