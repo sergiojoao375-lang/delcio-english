@@ -1,26 +1,54 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Mail, MessageCircle, ArrowLeft, Zap } from "lucide-react";
+import { Mail, MessageCircle, ArrowLeft, Zap, Sparkles, Mic, Trophy, WifiOff } from "lucide-react";
 import logoAsset from "@/assets/sergiotech-logo.png.asset.json";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "Sobre — SérgioTech" },
+      { title: "Sobre — Delcio-English" },
       {
         name: "description",
         content:
-          "Sobre o SérgioTech: aplicação para cálculo luminotécnico e dimensionamento de sistemas de iluminação, por Sérgio João.",
+          "Delcio-English: assistente de conversação com IA para aprender inglês e português, com correções instantâneas, modo de voz e progresso por níveis.",
       },
-      { property: "og:title", content: "Sobre — SérgioTech" },
+      { property: "og:title", content: "Sobre — Delcio-English" },
       {
         property: "og:description",
         content:
-          "Aplicação desenvolvida por Sérgio João, especialista em Electricidade e Telecomunicações.",
+          "Aprende inglês e português a conversar com o Delcio. Desenvolvido por Sérgio João (SérgioTech).",
       },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://delcio-english.lovable.app/about" },
+      { name: "twitter:card", content: "summary" },
     ],
+    links: [{ rel: "canonical", href: "https://delcio-english.lovable.app/about" }],
   }),
   component: AboutPage,
 });
+
+const FEATURES = [
+  {
+    icon: Sparkles,
+    title: "Correções instantâneas",
+    text: "O Delcio corrige a tua gramática e vocabulário a cada mensagem, com uma explicação curta na tua língua.",
+  },
+  {
+    icon: Mic,
+    title: "Modo de voz",
+    text: "Fala e ouve respostas com vozes realistas — escolhe o professor com quem queres conversar.",
+  },
+  {
+    icon: Trophy,
+    title: "Níveis e progresso",
+    text: "Ganha pontos, mantém a tua sequência e sobe de Iniciante até Avançado.",
+  },
+  {
+    icon: WifiOff,
+    title: "Funciona instalado",
+    text: "Instala no telemóvel como aplicação e abre-a mesmo com ligação instável.",
+  },
+];
+
 
 const WHATSAPP_URL = "https://wa.me/244931728474";
 const EMAIL_URL = "mailto:sergiojoao931@gmail.com";
