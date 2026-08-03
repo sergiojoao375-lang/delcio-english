@@ -1024,8 +1024,8 @@ function Index() {
 
 
 
-          <div className="flex-1 flex flex-col items-center justify-center px-6 gap-8">
           <div className="flex-1 overflow-y-auto flex flex-col items-center justify-center px-4 sm:px-6 gap-5 sm:gap-8 pt-16 sm:pt-20">
+
             <div className="text-center text-xs sm:text-sm uppercase tracking-[0.2em] text-white/60 min-h-[20px]">
               {loading
                 ? "A pensar…"
