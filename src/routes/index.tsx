@@ -1006,6 +1006,31 @@ function Index() {
 
           {showVoicePicker && (
             <div className="absolute top-16 left-3 right-3 sm:right-auto z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 sm:w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
+              <p className="text-xs text-white/60 mb-2 px-1">Motor de voz</p>
+              <div className="flex gap-1 mb-3">
+                <button
+                  onClick={() => selectProvider("elevenlabs")}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] border transition ${
+                    ttsProvider === "elevenlabs"
+                      ? "bg-white/20 border-white/50 font-medium"
+                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  ElevenLabs
+                  <span className="block text-[10px] opacity-60">mais realista</span>
+                </button>
+                <button
+                  onClick={() => selectProvider("lovable")}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] border transition ${
+                    ttsProvider === "lovable"
+                      ? "bg-white/20 border-white/50 font-medium"
+                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  Padrão
+                  <span className="block text-[10px] opacity-60">sempre disponível</span>
+                </button>
+              </div>
               <p className="text-xs text-white/60 mb-2 px-1">Escolha a voz do seu professor</p>
               <div className="flex flex-col gap-1">
                 {VOICES.map((v) => {
