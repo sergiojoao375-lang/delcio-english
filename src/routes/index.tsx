@@ -83,6 +83,10 @@ function Index() {
     if (typeof window === "undefined") return DEFAULT_VOICE_ID;
     return localStorage.getItem("delcio.voiceId") || DEFAULT_VOICE_ID;
   });
+  const [ttsProvider, setTtsProvider] = useState<"elevenlabs" | "lovable">(() => {
+    if (typeof window === "undefined") return "elevenlabs";
+    return (localStorage.getItem("delcio.ttsProvider") as "elevenlabs" | "lovable") || "elevenlabs";
+  });
   const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -205,7 +209,7 @@ function Index() {
       const res = await fetchWithRetry("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId }),
+        body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId, provider: ttsProvider }),
       });
       if (!res.ok) throw new Error("TTS failed");
       const blob = await res.blob();
@@ -254,7 +258,7 @@ function Index() {
       const res = await fetchWithRetry("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sample, voiceId: id }),
+        body: JSON.stringify({ text: sample, voiceId: id, provider: ttsProvider }),
       });
       if (!res.ok) throw new Error("TTS failed");
       const blob = await res.blob();
@@ -280,6 +284,14 @@ function Index() {
       localStorage.setItem("delcio.voiceId", id);
     }
   }
+
+  function selectProvider(p: "elevenlabs" | "lovable") {
+    setTtsProvider(p);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("delcio.ttsProvider", p);
+    }
+  }
+
 
 
 
@@ -844,6 +856,31 @@ function Index() {
               </button>
               {showVoicePicker && mode === "text" && (
                 <div className="absolute bottom-full right-0 mb-2 z-30 bg-card border border-border rounded-2xl p-3 w-[min(280px,calc(100vw-1.5rem))] max-h-[55vh] overflow-y-auto shadow-2xl">
+                  <p className="text-xs text-muted-foreground mb-2 px-1">Motor de voz</p>
+                  <div className="flex gap-1 mb-3">
+                    <button
+                      onClick={() => selectProvider("elevenlabs")}
+                      className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] border transition ${
+                        ttsProvider === "elevenlabs"
+                          ? "bg-primary/15 border-primary/60 font-medium"
+                          : "bg-secondary/40 border-border hover:bg-secondary"
+                      }`}
+                    >
+                      ElevenLabs
+                      <span className="block text-[10px] opacity-60">mais realista</span>
+                    </button>
+                    <button
+                      onClick={() => selectProvider("lovable")}
+                      className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] border transition ${
+                        ttsProvider === "lovable"
+                          ? "bg-primary/15 border-primary/60 font-medium"
+                          : "bg-secondary/40 border-border hover:bg-secondary"
+                      }`}
+                    >
+                      Padrão
+                      <span className="block text-[10px] opacity-60">sempre disponível</span>
+                    </button>
+                  </div>
                   <p className="text-xs text-muted-foreground mb-2 px-1">Escolha a voz do seu professor</p>
                   <div className="flex flex-col gap-1">
                     {VOICES.map((v) => {
@@ -969,6 +1006,31 @@ function Index() {
 
           {showVoicePicker && (
             <div className="absolute top-16 left-3 right-3 sm:right-auto z-20 bg-neutral-900/95 backdrop-blur border border-white/15 rounded-2xl p-3 sm:w-[280px] max-h-[60vh] overflow-y-auto shadow-2xl">
+              <p className="text-xs text-white/60 mb-2 px-1">Motor de voz</p>
+              <div className="flex gap-1 mb-3">
+                <button
+                  onClick={() => selectProvider("elevenlabs")}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] border transition ${
+                    ttsProvider === "elevenlabs"
+                      ? "bg-white/20 border-white/50 font-medium"
+                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  ElevenLabs
+                  <span className="block text-[10px] opacity-60">mais realista</span>
+                </button>
+                <button
+                  onClick={() => selectProvider("lovable")}
+                  className={`flex-1 rounded-lg px-2 py-1.5 text-[11px] border transition ${
+                    ttsProvider === "lovable"
+                      ? "bg-white/20 border-white/50 font-medium"
+                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  Padrão
+                  <span className="block text-[10px] opacity-60">sempre disponível</span>
+                </button>
+              </div>
               <p className="text-xs text-white/60 mb-2 px-1">Escolha a voz do seu professor</p>
               <div className="flex flex-col gap-1">
                 {VOICES.map((v) => {
