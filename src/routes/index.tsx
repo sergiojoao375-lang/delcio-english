@@ -446,6 +446,7 @@ function Index() {
         messages: history,
         userName: name,
         learningLang,
+        voiceMode: mode === "voice",
       });
       const { clean, correct } = stripScore(content);
       const { correction, rest } = splitCorrection(clean);
