@@ -209,7 +209,7 @@ function Index() {
       const res = await fetchWithRetry("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId }),
+        body: JSON.stringify({ text: cleaned, voiceId: overrideVoiceId || voiceId, provider: ttsProvider }),
       });
       if (!res.ok) throw new Error("TTS failed");
       const blob = await res.blob();
@@ -258,7 +258,7 @@ function Index() {
       const res = await fetchWithRetry("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: sample, voiceId: id }),
+        body: JSON.stringify({ text: sample, voiceId: id, provider: ttsProvider }),
       });
       if (!res.ok) throw new Error("TTS failed");
       const blob = await res.blob();
@@ -284,6 +284,14 @@ function Index() {
       localStorage.setItem("delcio.voiceId", id);
     }
   }
+
+  function selectProvider(p: "elevenlabs" | "lovable") {
+    setTtsProvider(p);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("delcio.ttsProvider", p);
+    }
+  }
+
 
 
 
