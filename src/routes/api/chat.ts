@@ -9,14 +9,18 @@ type Body = {
   learningLang?: "en" | "pt";
   mode?: "chat" | "translate";
   textToTranslate?: string;
+  voiceMode?: boolean;
 };
 
-function buildSystemPrompt(userName: string, learningLang: "en" | "pt") {
+function buildSystemPrompt(userName: string, learningLang: "en" | "pt", voiceMode = false) {
   const target = learningLang === "en" ? "English" : "Português";
   const native = learningLang === "en" ? "Português" : "English";
+  const voiceRule = voiceMode
+    ? `\nVOICE MODE: the student is SPEAKING and their words come from automatic speech recognition. NEVER correct punctuation, capitalization, accents, or spelling — those are artifacts of the transcription, not the student's mistakes. Correct ONLY real spoken errors: grammar, word choice, or verb forms. If the only difference is punctuation/capitalization/spelling, treat the message as CORRECT and omit the ✏️ line.\n`
+    : "";
   return `You are "Delcio", a friendly, patient beginner language teacher.
 The student's name is ${userName}. They are learning ${target} and their native language is ${native}.
-
+${voiceRule}
 STRICT RULES (follow EVERY message):
 1. If the student's message has any grammar, spelling, or vocabulary mistake in ${target}, START your reply with a gentle correction line in this EXACT format (this is the ONLY line allowed to contain ${native}):
    ✏️ <corrected version in ${target}> — <very short explanation in ${native}>
