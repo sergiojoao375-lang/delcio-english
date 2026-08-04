@@ -59,7 +59,7 @@ export const Route = createFileRoute("/api/tts")({
         const apiKey = process.env.ELEVENLABS_API_KEY;
 
 
-        let body: { text?: string; voiceId?: string };
+        let body: { text?: string; voiceId?: string; provider?: string };
         try {
           body = await request.json();
         } catch {
@@ -80,7 +80,8 @@ export const Route = createFileRoute("/api/tts")({
         const voiceId = body.voiceId && isValidVoiceId(body.voiceId) ? body.voiceId : DEFAULT_VOICE_ID;
         const reqId = request.headers.get("X-Client-Request-Id") || "";
 
-        if (!apiKey) {
+        // O utilizador pode escolher o motor de voz
+        if (!apiKey || body.provider === "lovable") {
           return lovableTts(text, voiceId, reqId);
         }
 
