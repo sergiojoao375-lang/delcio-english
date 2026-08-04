@@ -89,6 +89,11 @@ export default async (request) => {
   }
 
   const voiceId = body.voiceId && VALID_VOICE_IDS.has(body.voiceId) ? body.voiceId : DEFAULT_VOICE_ID;
+  const reqId = request.headers.get("X-Client-Request-Id") || "";
+
+  if (!apiKey || body.provider === "lovable") {
+    return lovableTts(text, voiceId, reqId);
+  }
 
   const resp = await fetch(
     `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
@@ -109,21 +114,12 @@ export default async (request) => {
     }
   );
 
-  const reqId = request.headers.get("X-Client-Request-Id") || "";
   if (!resp.ok) {
     const err = await resp.text();
     console.error(JSON.stringify({ scope: "tts", requestId: reqId, upstreamStatus: resp.status, message: err.slice(0, 300) }));
-    if (resp.status === 401 || resp.status === 403) {
-      return new Response(
-        JSON.stringify({ error: "key_rotated", retryable: true, message: "TTS auth failed — key may be rotating." }),
-        { status: 503, headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId } }
-      );
-    }
-    return new Response(JSON.stringify({ error: err || "TTS failed" }), {
-      status: resp.status,
-      headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId },
-    });
+    return lovableTts(text, voiceId, reqId);
   }
+
 
   const audio = await resp.arrayBuffer();
   return new Response(audio, {
