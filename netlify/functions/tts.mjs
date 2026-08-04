@@ -13,18 +13,62 @@ const VALID_VOICE_IDS = new Set([
 ]);
 const DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 
+const FALLBACK_VOICE = {
+  EXAVITQu4vr4xnSDxMaL: "shimmer",
+  FGY2WhTYpPnrIDTdsKH5: "nova",
+  pFZP5JQG7iQjIQuC4Bku: "coral",
+  XrExE9yKIg1WjnnlVkGX: "sage",
+  cgSgspJ2msm6clMCkdW9: "alloy",
+  IKne3meq5aSn9XLyUdCD: "echo",
+  JBFqnCBsd6RMkjVDRZzb: "onyx",
+  TX3LPaxmHKxFdv7VOQHJ: "fable",
+  nPczCjzI2devNBz1zQrb: "ash",
+};
+
+async function lovableTts(text, voiceId, reqId) {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) {
+    return new Response(JSON.stringify({ error: "Serviço de voz indisponível." }), {
+      status: 502,
+      headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId },
+    });
+  }
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "openai/gpt-4o-mini-tts",
+      input: text,
+      voice: FALLBACK_VOICE[voiceId] ?? "alloy",
+      response_format: "mp3",
+    }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    console.error(JSON.stringify({ scope: "tts-fallback", requestId: reqId, upstreamStatus: resp.status, message: err.slice(0, 300) }));
+    return new Response(JSON.stringify({ error: "Serviço de voz indisponível no momento." }), {
+      status: 502,
+      headers: { "Content-Type": "application/json", "X-Backend-Request-Id": reqId },
+    });
+  }
+  return new Response(await resp.arrayBuffer(), {
+    status: 200,
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Cache-Control": "no-store",
+      "X-Backend-Request-Id": reqId,
+      "X-TTS-Provider": "lovable",
+    },
+  });
+}
+
 export default async (request) => {
   if (request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "ELEVENLABS_API_KEY not configured on Netlify" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
-  }
+
 
   let body;
   try {
