@@ -57,7 +57,7 @@ export const Route = createFileRoute("/api/chat")({
           const userName = body.userName || "amigo";
           const learningLang = (body.learningLang || "en") as "en" | "pt";
           messages = [
-            { role: "system", content: buildSystemPrompt(userName, learningLang) },
+            { role: "system", content: buildSystemPrompt(userName, learningLang, body.voiceMode === true) },
             ...(body.messages || []),
           ];
         }
