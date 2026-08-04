@@ -83,6 +83,10 @@ function Index() {
     if (typeof window === "undefined") return DEFAULT_VOICE_ID;
     return localStorage.getItem("delcio.voiceId") || DEFAULT_VOICE_ID;
   });
+  const [ttsProvider, setTtsProvider] = useState<"elevenlabs" | "lovable">(() => {
+    if (typeof window === "undefined") return "elevenlabs";
+    return (localStorage.getItem("delcio.ttsProvider") as "elevenlabs" | "lovable") || "elevenlabs";
+  });
   const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [previewingVoice, setPreviewingVoice] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
