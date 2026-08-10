@@ -304,12 +304,19 @@ function Index() {
     let cancelled = false;
     let raf = 0;
     let stream: MediaStream | null = null;
+    let owned = false;
     let ctx: AudioContext | null = null;
     (async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Reutiliza o stream do gravador (telemóvel) para não disputar o microfone.
+        if (micStreamRef.current) {
+          stream = micStreamRef.current;
+        } else {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          owned = true;
+        }
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          if (owned) stream.getTracks().forEach((t) => t.stop());
           return;
         }
         const Ctx: typeof AudioContext =
@@ -339,11 +346,12 @@ function Index() {
     return () => {
       cancelled = true;
       if (raf) cancelAnimationFrame(raf);
-      stream?.getTracks().forEach((t) => t.stop());
+      if (owned) stream?.getTracks().forEach((t) => t.stop());
       ctx?.close().catch(() => {});
       setVoiceLevel(0);
     };
   }, [recording]);
+
 
   // Synthetic level while TTS is speaking or while loading
   useEffect(() => {
