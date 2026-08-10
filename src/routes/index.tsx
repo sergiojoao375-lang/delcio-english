@@ -473,34 +473,133 @@ function Index() {
     }
   }
 
-  function toggleMic() {
+  async function transcribeBlob(blob: Blob, mime: string) {
+    const extMap: Record<string, string> = {
+      "audio/webm": "webm",
+      "audio/ogg": "ogg",
+      "audio/mp4": "mp4",
+      "audio/aac": "aac",
+      "audio/mpeg": "mp3",
+      "audio/wav": "wav",
+    };
+    const ext = extMap[mime.split(";")[0]] ?? "webm";
+    const fd = new FormData();
+    fd.append("file", blob, `recording.${ext}`);
+    fd.append("language", learningLang === "en" ? "en" : "pt");
+    setLoading(true);
+    try {
+      const res = await fetchWithRetry("/api/stt", { method: "POST", body: fd }, { timeoutMs: 45_000 });
+      if (!res.ok) throw new Error("stt");
+      const data = (await res.json()) as { text?: string };
+      const text = (data.text || "").trim();
+      setLoading(false);
+      if (!text) {
+        setBubbles((prev) => [
+          ...prev,
+          { id: uid(), kind: "bot", text: "⚠️ Não consegui ouvir. Tenta falar mais perto do microfone.", voiceId },
+        ]);
+        return;
+      }
+      send(text);
+    } catch {
+      setLoading(false);
+      setBubbles((prev) => [
+        ...prev,
+        { id: uid(), kind: "bot", text: "⚠️ Não consegui transcrever o áudio. Tenta novamente.", voiceId },
+      ]);
+    }
+  }
+
+  async function startRecorder() {
     if (typeof window === "undefined") return;
-    const SR =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) {
-      alert("Seu navegador não suporta reconhecimento de voz. Use Chrome no desktop.");
+    if (!navigator.mediaDevices?.getUserMedia || typeof (window as any).MediaRecorder === "undefined") {
+      alert("Este navegador não permite gravar áudio. Tenta o Chrome ou o Safari atualizados.");
       return;
     }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      micStreamRef.current = stream;
+      const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/aac", "audio/ogg"];
+      const mime =
+        candidates.find((t) => (window as any).MediaRecorder.isTypeSupported?.(t)) || "";
+      const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+      const chunks: BlobPart[] = [];
+      rec.ondataavailable = (e: BlobEvent) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+      rec.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+        mediaRecorderRef.current = null;
+        const type = rec.mimeType || mime || "audio/webm";
+        const blob = new Blob(chunks, { type });
+        if (blob.size < 1500) return;
+        transcribeBlob(blob, type);
+      };
+      mediaRecorderRef.current = rec;
+      rec.start();
+      setRecording(true);
+    } catch {
+      alert("Permite o acesso ao microfone para falares com o Delcio.");
+      setRecording(false);
+    }
+  }
+
+  function toggleMic() {
+    if (typeof window === "undefined") return;
     if (recording) {
-      recognitionRef.current?.stop();
+      if (mediaRecorderRef.current) {
+        try {
+          mediaRecorderRef.current.stop();
+        } catch {
+          /* ignore */
+        }
+      } else {
+        try {
+          recognitionRef.current?.stop();
+        } catch {
+          /* ignore */
+        }
+      }
       setRecording(false);
       return;
     }
+
+    const SR =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    // No telemóvel o reconhecimento nativo é pouco fiável — grava e transcreve no servidor.
+    if (!SR || isMobile) {
+      startRecorder();
+      return;
+    }
+
     const rec = new SR();
     rec.lang = learningLang === "en" ? "en-US" : "pt-BR";
     rec.interimResults = false;
     rec.maxAlternatives = 1;
+    let got = false;
     rec.onresult = (e: any) => {
+      got = true;
       const transcript = e.results[0][0].transcript;
       setRecording(false);
       send(transcript);
     };
-    rec.onerror = () => setRecording(false);
+    rec.onerror = () => {
+      setRecording(false);
+      if (!got) startRecorder();
+    };
     rec.onend = () => setRecording(false);
     recognitionRef.current = rec;
-    rec.start();
-    setRecording(true);
+    try {
+      rec.start();
+      setRecording(true);
+    } catch {
+      startRecorder();
+    }
   }
+
 
   async function translateLast() {
     const lastBot = [...bubbles].reverse().find((b) => b.kind === "bot") as
