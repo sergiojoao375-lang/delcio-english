@@ -111,6 +111,9 @@ function Index() {
   } | null>(null);
 
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const prevLevelRef = useRef(-1);
   const prevTurnsRef = useRef(-1);
