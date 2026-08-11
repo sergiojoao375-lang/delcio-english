@@ -1286,7 +1286,67 @@ function Index() {
           </div>
         </div>
       )}
+
+      {micHelp && (
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-card text-card-foreground p-5 shadow-xl space-y-3">
+            <h2 className="font-semibold text-base flex items-center gap-2">
+              <Mic className="w-4 h-4 text-primary" /> Ativar o microfone
+            </h2>
+            {micHelp === "insecure" && (
+              <p className="text-sm text-muted-foreground">
+                O microfone só funciona em ligações seguras (https). Abre o site publicado em https.
+              </p>
+            )}
+            {micHelp === "embedded" && (
+              <p className="text-sm text-muted-foreground">
+                Estás dentro da pré-visualização, onde o microfone é bloqueado. Abre o app numa aba própria para falar.
+              </p>
+            )}
+            {micHelp === "blocked" && (
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p>O navegador não deu permissão. No telemóvel:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li><b>Chrome (Android):</b> menu ⋮ → Definições do site → Microfone → Permitir.</li>
+                  <li><b>Safari (iPhone):</b> ícone "aA" na barra de endereço → Definições do Website → Microfone → Permitir.</li>
+                  <li>Se abriste o app instalado, fecha-o e abre no navegador para dar a permissão.</li>
+                </ul>
+                <p>Depois de permitir, toca em “Tentar novamente”.</p>
+              </div>
+            )}
+            <div className="flex flex-col gap-2 pt-1">
+              {micHelp !== "blocked" && (
+                <button
+                  className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-medium"
+                  onClick={() => {
+                    setMicHelp(null);
+                    window.open("https://delcio-english.lovable.app", "_blank", "noopener");
+                  }}
+                >
+                  Abrir o app numa aba nova
+                </button>
+              )}
+              <button
+                className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-medium"
+                onClick={() => {
+                  setMicHelp(null);
+                  void startRecorder();
+                }}
+              >
+                Tentar novamente
+              </button>
+              <button
+                className="w-full rounded-xl border border-border py-2.5 text-sm"
+                onClick={() => setMicHelp(null)}
+              >
+                Escrever em vez de falar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
+
   );
 }
 
