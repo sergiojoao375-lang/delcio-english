@@ -572,9 +572,7 @@ function Index() {
       setRecording(false);
       const name = err?.name || "";
       if (name === "NotAllowedError" || name === "SecurityError") {
-        micNotice(
-          "⚠️ O microfone foi bloqueado. No telemóvel: toca no cadeado (ou ⋮ → Definições do site) ao lado do endereço, ativa o Microfone e recarrega a página."
-        );
+        setMicHelp("blocked");
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
         micNotice("⚠️ Não encontrei nenhum microfone neste dispositivo.");
       } else if (name === "NotReadableError") {
