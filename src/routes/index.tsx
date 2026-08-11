@@ -521,10 +521,24 @@ function Index() {
     }
   }
 
+  function micNotice(text: string) {
+    setBubbles((prev) => [...prev, { id: uid(), kind: "bot", text, voiceId }]);
+  }
+
   async function startRecorder() {
     if (typeof window === "undefined") return;
+    if (!window.isSecureContext) {
+      micNotice("⚠️ O microfone só funciona em ligações seguras (https). Abre o site publicado em https.");
+      return;
+    }
+    if (window.self !== window.top) {
+      micNotice(
+        "⚠️ O microfone está bloqueado dentro da pré-visualização. Abre o app numa aba/janela própria (ou instala-o) para falar."
+      );
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia || typeof (window as any).MediaRecorder === "undefined") {
-      alert("Este navegador não permite gravar áudio. Tenta o Chrome ou o Safari atualizados.");
+      micNotice("⚠️ Este navegador não permite gravar áudio. Tenta o Chrome ou o Safari atualizados.");
       return;
     }
     try {
@@ -546,17 +560,32 @@ function Index() {
         mediaRecorderRef.current = null;
         const type = rec.mimeType || mime || "audio/webm";
         const blob = new Blob(chunks, { type });
-        if (blob.size < 1500) return;
+        if (blob.size < 1500) {
+          micNotice("⚠️ Gravação demasiado curta. Mantém o botão até acabares de falar.");
+          return;
+        }
         transcribeBlob(blob, type);
       };
       mediaRecorderRef.current = rec;
       rec.start();
       setRecording(true);
-    } catch {
-      alert("Permite o acesso ao microfone para falares com o Delcio.");
+    } catch (err: any) {
       setRecording(false);
+      const name = err?.name || "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        micNotice(
+          "⚠️ O microfone foi bloqueado. No telemóvel: toca no cadeado (ou ⋮ → Definições do site) ao lado do endereço, ativa o Microfone e recarrega a página."
+        );
+      } else if (name === "NotFoundError" || name === "OverconstrainedError") {
+        micNotice("⚠️ Não encontrei nenhum microfone neste dispositivo.");
+      } else if (name === "NotReadableError") {
+        micNotice("⚠️ O microfone está a ser usado por outra app. Fecha-a e tenta de novo.");
+      } else {
+        micNotice("⚠️ Não consegui aceder ao microfone. Tenta novamente.");
+      }
     }
   }
+
 
   function toggleMic() {
     if (typeof window === "undefined") return;
