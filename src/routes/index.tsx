@@ -77,6 +77,7 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"text" | "voice">("text");
   const [recording, setRecording] = useState(false);
+  const [micHelp, setMicHelp] = useState<null | "blocked" | "embedded" | "insecure">(null);
   const [speaking, setSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [voiceId, setVoiceId] = useState<string>(() => {
