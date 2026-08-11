@@ -529,13 +529,11 @@ function Index() {
   async function startRecorder() {
     if (typeof window === "undefined") return;
     if (!window.isSecureContext) {
-      micNotice("⚠️ O microfone só funciona em ligações seguras (https). Abre o site publicado em https.");
+      setMicHelp("insecure");
       return;
     }
     if (window.self !== window.top) {
-      micNotice(
-        "⚠️ O microfone está bloqueado dentro da pré-visualização. Abre o app numa aba/janela própria (ou instala-o) para falar."
-      );
+      setMicHelp("embedded");
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof (window as any).MediaRecorder === "undefined") {
