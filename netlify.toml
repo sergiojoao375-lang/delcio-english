@@ -6,6 +6,11 @@
 [build.environment]
   CI = "false"
 
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Permissions-Policy = "microphone=(self)"
+
 # SPA fallback: any unmatched route serves index.html so TanStack Router
 # handles client-side routing. Netlify Functions declared via `export const
 # config = { path: "/api/..." }` are matched before this catch-all.
