@@ -1,4 +1,4 @@
-const CACHE_NAME = 'delcio-english-v1';
+const CACHE_NAME = 'delcio-english-v2';
 const PRECACHE = ['/', '/manifest.json', '/icon-192x192.png', '/icon-512x512.png'];
 
 self.addEventListener('install', (event) => {

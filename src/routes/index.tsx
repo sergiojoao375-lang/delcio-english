@@ -77,7 +77,7 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"text" | "voice">("text");
   const [recording, setRecording] = useState(false);
-  const [micHelp, setMicHelp] = useState<null | "blocked" | "embedded" | "insecure">(null);
+  const [micHelp, setMicHelp] = useState<null | "requesting" | "blocked" | "embedded" | "insecure">(null);
   const [speaking, setSpeaking] = useState(false);
   const [voiceLevel, setVoiceLevel] = useState(0);
   const [voiceId, setVoiceId] = useState<string>(() => {
@@ -541,9 +541,22 @@ function Index() {
       return;
     }
     try {
+      if (navigator.permissions?.query) {
+        try {
+          const permission = await navigator.permissions.query({ name: "microphone" as PermissionName });
+          if (permission.state === "denied") {
+            setMicHelp("blocked");
+            return;
+          }
+        } catch {
+          // Alguns navegadores não expõem a permissão do microfone nesta API.
+        }
+      }
+      setMicHelp("requesting");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
+      setMicHelp(null);
       micStreamRef.current = stream;
       const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/aac", "audio/ogg"];
       const mime =
@@ -566,7 +579,8 @@ function Index() {
         transcribeBlob(blob, type);
       };
       mediaRecorderRef.current = rec;
-      rec.start();
+      // Intervalos pequenos evitam gravações vazias em algumas versões do Chrome Android.
+      rec.start(250);
       setRecording(true);
     } catch (err: any) {
       setRecording(false);
@@ -1305,13 +1319,20 @@ function Index() {
             )}
             {micHelp === "blocked" && (
               <div className="text-sm text-muted-foreground space-y-2">
-                <p>O navegador não deu permissão. No telemóvel:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li><b>Chrome (Android):</b> menu ⋮ → Definições do site → Microfone → Permitir.</li>
-                  <li><b>Safari (iPhone):</b> ícone "aA" na barra de endereço → Definições do Website → Microfone → Permitir.</li>
-                  <li>Se abriste o app instalado, fecha-o e abre no navegador para dar a permissão.</li>
-                </ul>
+                <p>O Chrome bloqueou o microfone para este site.</p>
+                <ol className="list-decimal pl-5 space-y-1">
+                  <li>Toca no ícone de controlos à esquerda do endereço (não é um cadeado).</li>
+                  <li>Abre <b>Permissões</b> → <b>Microfone</b> → <b>Permitir</b>.</li>
+                  <li>Atualiza esta página e toca novamente no microfone.</li>
+                </ol>
                 <p>Depois de permitir, toca em “Tentar novamente”.</p>
+              </div>
+            )}
+            {micHelp === "requesting" && (
+              <div className="text-sm text-muted-foreground space-y-2">
+                <p className="font-medium text-card-foreground">À espera da autorização do Chrome…</p>
+                <p>Procura a pergunta “Permitir que este site use o microfone?” e toca em <b>Permitir</b>.</p>
+                <p>Se a pergunta não aparecer, fecha este aviso e toca novamente no microfone.</p>
               </div>
             )}
             <div className="flex flex-col gap-2 pt-1">
@@ -1326,20 +1347,19 @@ function Index() {
                   Abrir o app numa aba nova
                 </button>
               )}
-              <button
-                className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-medium"
-                onClick={() => {
-                  setMicHelp(null);
-                  void startRecorder();
-                }}
-              >
-                Tentar novamente
-              </button>
+              {micHelp !== "requesting" && (
+                <button
+                  className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-medium"
+                  onClick={() => void startRecorder()}
+                >
+                  Tentar novamente
+                </button>
+              )}
               <button
                 className="w-full rounded-xl border border-border py-2.5 text-sm"
                 onClick={() => setMicHelp(null)}
               >
-                Escrever em vez de falar
+                {micHelp === "requesting" ? "Fechar aviso" : "Escrever em vez de falar"}
               </button>
             </div>
           </div>
