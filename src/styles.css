@@ -203,4 +203,9 @@
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
 }
+
+#lovable-bagde {
+  display: none !important;
+  }
+
 .ai-particle { animation: ai-particle 2.4s ease-in-out infinite; }
